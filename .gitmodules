@@ -1,0 +1,3 @@
+[submodule "libdrunkard"]
+	path = libdrunkard
+	url = git@github.com:jabb/libdrunkard.git
