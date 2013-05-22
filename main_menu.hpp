@@ -51,24 +51,25 @@ public:
     main_menu(sf::RenderWindow *win, screen_manager *sm, resource_manager *rm) :
         win_(win), screen_manager_(sm), resource_manager_(rm)
     {
-        sf::View view(sf::FloatRect(0, 0, 320, 320));
+        sf::View view(sf::FloatRect(0, 0, 1.0, 1.0));
         view.setViewport(sf::FloatRect(0, 0, 1.0, 1.0));
         win->setView(view);
 
-        title_sprite_ = sf::Sprite(resource_manager_->acquire<sf::Texture>("title"));
-        title_sprite_.setPosition(320 / 2 - 192 / 2, 0);
+        title_sprite_ = sf::RectangleShape(sf::Vector2f(0.5, 0.2));
+        title_sprite_.setTexture(&resource_manager_->acquire<sf::Texture>("title"));
+        title_sprite_.setPosition(0.25, 0);
 
         sf::Font &font = resource_manager_->acquire<sf::Font>("Pokemon GB");
 
-        sf::Text qtext("Quit", font, 12);
-        quit_button_ = simple_button(win_, sf::Sprite(resource_manager_->acquire<sf::Texture>("frame")),
-            std::move(qtext), std::bind(&main_menu::on_quit_button_click, std::ref(*this)));
-        quit_button_.set_center(160, 240);
+        new_game_button_ = simple_button(win_, 0.4, 0.2, std::bind(&main_menu::on_new_game_button_click, std::ref(*this)));
+        new_game_button_.set_background(resource_manager_->acquire<sf::Texture>("frame"));
+        new_game_button_.set_text("New", font, 12);
+        new_game_button_.set_center(0.5, 0.4);
 
-        sf::Text ntext("New", font, 12);
-        new_game_button_ = simple_button(win_, sf::Sprite(resource_manager_->acquire<sf::Texture>("frame")),
-            std::move(ntext), std::bind(&main_menu::on_new_game_button_click, std::ref(*this)));
-        new_game_button_.set_center(160, 160);
+        quit_button_ = simple_button(win_, 0.4, 0.2, std::bind(&main_menu::on_quit_button_click, std::ref(*this)));
+        quit_button_.set_background(resource_manager_->acquire<sf::Texture>("frame"));
+        quit_button_.set_text("Quit", font, 12);
+        quit_button_.set_center(0.5, 0.6);
     }
 
     virtual ~main_menu() { }
@@ -112,7 +113,7 @@ protected:
     screen_manager *screen_manager_;
     resource_manager *resource_manager_;
 
-    sf::Sprite title_sprite_;
+    sf::RectangleShape title_sprite_;
     simple_button new_game_button_;
     simple_button quit_button_;
 

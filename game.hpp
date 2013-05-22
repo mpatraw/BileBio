@@ -143,15 +143,15 @@ public:
             {
                 game_view_.move(0, -10);
             }
-            else if (event.key.code == sf::Keyboard::A)
+            if (event.key.code == sf::Keyboard::A)
             {
                 game_view_.move(-10, 0);
             }
-            else if (event.key.code == sf::Keyboard::S)
+            if (event.key.code == sf::Keyboard::S)
             {
                 game_view_.move(0, 10);
             }
-            else if (event.key.code == sf::Keyboard::D)
+            if (event.key.code == sf::Keyboard::D)
             {
                 game_view_.move(10, 0);
             }
