@@ -25,13 +25,16 @@
 
 ### Player
 
-The player will have two stats: Health and energy. Energy's use depends on the class, but in
+The player will have two stats: Health and energy. Energy's use depends on the animal, but in
 all cases it denotes how tired the player is. Three for each is about average.
 
 ### Plants
 
 Plants are not hostile by default, but they can grow hostile flowers, vines, but also fruit
 to replenish energy.
+
+As you progress through the levels, plants increase in hostility and grow more interesting
+and deadly flowers and vines.
 
 ## TODO
 

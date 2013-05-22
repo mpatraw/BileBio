@@ -15,7 +15,7 @@ class animation : private boost::noncopyable
 {
 public:
     animation(sf::RenderWindow *win=nullptr, double width=0.0, double height=0.0, double duration=0.0, bool loop=false) :
-        win_(win), width_(width), height_(height), duration_(duration), loop_(loop)
+        win_(win), width_(width), height_(height), duration_(duration), loops_(loop)
     {
         x_ = 0.0;
         y_ = 0.0;
@@ -30,18 +30,24 @@ public:
         win_ = win;
     }
 
+    double get_width() const { return width_; }
+    double get_height() const { return height_; }
+
     void set_size(double width, double height)
     {
         width_ = width;
         height_ = height;
     }
 
+    double get_x() const { return x_; }
+    double get_y() const { return y_; }
+
     void set_position(double x, double y)
     {
         x_ = x;
         y_ = y;
     }
-    void set_loop(bool loop=true) { loop_ = loop; }
+    void set_loops(bool loops=true) { loops_ = loops; }
     void set_duration(double d) { duration_ = d; }
 
     void start() { paused_ = false; current_frame_ = 0; done_ = false; time_accumulator_ = 0.0; }
@@ -66,7 +72,7 @@ public:
 
     void update(double dt)
     {
-        if (!paused_ && (!done_ || loop_))
+        if (!paused_ && (!done_ || loops_))
         {
             time_accumulator_ += dt;
             if (time_accumulator_ >= duration_ / frames_.size() * current_frame_)
@@ -93,7 +99,7 @@ private:
     double width_;
     double height_;
     double duration_;
-    bool loop_;
+    bool loops_;
     std::vector<sf::RectangleShape> frames_;
     double x_;
     double y_;
@@ -101,6 +107,14 @@ private:
     bool paused_;
     bool done_;
     double time_accumulator_;
+};
+
+class state_animator : private boost::noncopyable
+{
+public:
+
+private:
+
 };
 
 enum ground
@@ -213,7 +227,7 @@ public:
         water_anim_.set_render_window(win_);
         water_anim_.set_size(0.2, 0.2);
         water_anim_.set_duration(1.0);
-        water_anim_.set_loop(true);
+        water_anim_.set_loops(true);
         water_anim_.add_frame(resource_manager_->acquire<sf::Texture>("water1"));
         water_anim_.add_frame(resource_manager_->acquire<sf::Texture>("water2"));
         water_anim_.start();
@@ -221,9 +235,16 @@ public:
         player_anim_.set_render_window(win_);
         player_anim_.set_size(0.2, 0.2);
         player_anim_.set_duration(0.5);
-        player_anim_.set_loop(true);
+        player_anim_.set_loops(true);
         player_anim_.add_frame(resource_manager_->acquire<sf::Texture>("player"));
         player_anim_.start();
+
+        player_dx_ = 0.0;
+        player_dy_ = 0.0;
+        player_destx_ = 0.0;
+        player_desty_ = 0.0;
+        player_moving_ = false;
+        player_timer_ = 0.0;
     }
 
     virtual ~game() { }
@@ -245,29 +266,69 @@ public:
 
     virtual void on_event(const sf::Event &event)
     {
-        if (event.type == sf::Event::KeyPressed)
-        {
-            if (event.key.code == sf::Keyboard::W)
-            {
-                game_view_.move(0, -0.05);
-            }
-            if (event.key.code == sf::Keyboard::A)
-            {
-                game_view_.move(-0.05, 0);
-            }
-            if (event.key.code == sf::Keyboard::S)
-            {
-                game_view_.move(0, 0.05);
-            }
-            if (event.key.code == sf::Keyboard::D)
-            {
-                game_view_.move(0.05, 0);
-            }
-        }
+        (void)event;
     }
 
     virtual void on_update(double dt)
     {
+        if (!player_moving_)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+            {
+                player_destx_ = player_anim_.get_x();
+                player_desty_ = player_anim_.get_y() - 0.2;
+                player_dx_ = 0.0;
+                player_dy_ = -0.2;
+                player_moving_ = true;
+                player_timer_ = 0.0;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+            {
+                player_destx_ = player_anim_.get_x() - 0.2;
+                player_desty_ = player_anim_.get_y();
+                player_dx_ = -0.2;
+                player_dy_ = 0.0;
+                player_moving_ = true;
+                player_timer_ = 0.0;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+            {
+                player_destx_ = player_anim_.get_x();
+                player_desty_ = player_anim_.get_y() + 0.2;
+                player_dx_ = 0.0;
+                player_dy_ = 0.2;
+                player_moving_ = true;
+                player_timer_ = 0.0;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+            {
+                player_destx_ = player_anim_.get_x() + 0.2;
+                player_desty_ = player_anim_.get_y();
+                player_dx_ = 0.2;
+                player_dy_ = 0.0;
+                player_moving_ = true;
+                player_timer_ = 0.0;
+            }
+        }
+
+        if (player_moving_)
+        {
+            player_timer_ += dt;
+            if (player_timer_ >= 0.5)
+            {
+                player_anim_.set_position(player_destx_, player_desty_);
+                player_moving_ = false;
+            }
+            else
+            {
+                player_anim_.set_position(
+                    player_anim_.get_x() + player_dx_ * (dt / 0.5),
+                    player_anim_.get_y() + player_dy_ * (dt / 0.5));
+            }
+        }
+        game_view_.setCenter(
+            player_anim_.get_x() + player_anim_.get_width() / 2,
+            player_anim_.get_y() + player_anim_.get_height() / 2);
         water_anim_.update(dt);
         player_anim_.update(dt);
     }
@@ -291,8 +352,6 @@ public:
             }
         }
 
-        auto pos = game_view_.getCenter() - sf::Vector2f(0.1, 0.1);
-        player_anim_.set_position(pos.x, pos.y);
         player_anim_.render();
 
         win_->setView(hud_view_);
@@ -312,11 +371,12 @@ protected:
     sf::RectangleShape frame_;
     animation water_anim_;
     animation player_anim_;
-    double player_x_;
-    double player_y_;
     bool player_moving_;
+    double player_destx_;
+    double player_desty_;
     double player_dx_;
     double player_dy_;
+    double player_timer_;
 };
 
 #endif

@@ -41,9 +41,9 @@ int main()
     rm.manage<sf::Texture>("tree", sprite);
     sprite.loadFromFile("resources/player.png");
     rm.manage<sf::Texture>("player", sprite);
-    sprite.loadFromFile("resources/water1.png");
+    sprite.loadFromFile("resources/water.png", sf::IntRect(0, 0, 16, 16));
     rm.manage<sf::Texture>("water1", sprite);
-    sprite.loadFromFile("resources/water2.png");
+    sprite.loadFromFile("resources/water.png", sf::IntRect(16, 0, 16, 16));
     rm.manage<sf::Texture>("water2", sprite);
 
 
