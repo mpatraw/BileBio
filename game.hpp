@@ -109,12 +109,16 @@ public:
     game(sf::RenderWindow *win, screen_manager *sm, resource_manager *rm) :
         win_(win), screen_manager_(sm), resource_manager_(rm)
     {
-        game_view_ = sf::View(sf::FloatRect(0, 0, 320, 320));
+        game_view_ = sf::View(sf::FloatRect(0, 0, 1, 1));
         game_view_.setViewport(sf::FloatRect(0, 0, 1.0, 0.66));
-        hud_view_ = sf::View(sf::FloatRect(0, 0, 320, 320));
+        hud_view_ = sf::View(sf::FloatRect(0, 0, 1, 1));
         hud_view_.setViewport(sf::FloatRect(0, 0.66, 1.0, 1.0));
-        grass_ = sf::Sprite(resource_manager_->acquire<sf::Texture>("grass"));
-        tree_ = sf::Sprite(resource_manager_->acquire<sf::Texture>("tree"));
+        grass_ = sf::RectangleShape(sf::Vector2f(0.2, 0.2));
+        grass_.setTexture(&resource_manager_->acquire<sf::Texture>("grass"));
+        tree_ = sf::RectangleShape(sf::Vector2f(0.2, 0.2));
+        tree_.setTexture(&resource_manager_->acquire<sf::Texture>("tree"));
+        player_ = sf::RectangleShape(sf::Vector2f(0.2, 0.2));
+        player_.setTexture(&resource_manager_->acquire<sf::Texture>("player"));
     }
 
     virtual ~game() { }
@@ -141,19 +145,19 @@ public:
         {
             if (event.key.code == sf::Keyboard::W)
             {
-                game_view_.move(0, -10);
+                game_view_.move(0, -0.05);
             }
             if (event.key.code == sf::Keyboard::A)
             {
-                game_view_.move(-10, 0);
+                game_view_.move(-0.05, 0);
             }
             if (event.key.code == sf::Keyboard::S)
             {
-                game_view_.move(0, 10);
+                game_view_.move(0, 0.05);
             }
             if (event.key.code == sf::Keyboard::D)
             {
-                game_view_.move(10, 0);
+                game_view_.move(0.05, 0);
             }
         }
     }
@@ -168,9 +172,7 @@ public:
         (void)dt;
 
         win_->setView(game_view_);
-        auto spr_size = grass_.getTexture()->getSize();
-        spr_size.x *= grass_.getScale().x;
-        spr_size.y *= grass_.getScale().y;
+        auto spr_size = grass_.getSize();
 
         for (size_t x = 0; x < forest_.get_width(); ++x)
         {
@@ -185,6 +187,9 @@ public:
                 }
             }
         }
+
+        player_.setPosition(game_view_.getCenter() - sf::Vector2f(0.1, 0.1));
+        win_->draw(player_);
     }
 
 protected:
@@ -195,8 +200,9 @@ protected:
     resource_manager *resource_manager_;
     forest forest_;
 
-    sf::Sprite grass_;
-    sf::Sprite tree_;
+    sf::RectangleShape grass_;
+    sf::RectangleShape tree_;
+    sf::RectangleShape player_;
 };
 
 #endif

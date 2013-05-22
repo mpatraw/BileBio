@@ -61,14 +61,14 @@ public:
 
         sf::Font &font = resource_manager_->acquire<sf::Font>("Pokemon GB");
 
-        new_game_button_ = simple_button(win_, 0.4, 0.2, std::bind(&main_menu::on_new_game_button_click, std::ref(*this)));
+        new_game_button_ = simple_button(win_, 0.2, 0.1, std::bind(&main_menu::on_new_game_button_click, std::ref(*this)));
         new_game_button_.set_background(resource_manager_->acquire<sf::Texture>("frame"));
-        new_game_button_.set_text("New", font, 12);
+        new_game_button_.set_text("New", font, 24);
         new_game_button_.set_center(0.5, 0.4);
 
-        quit_button_ = simple_button(win_, 0.4, 0.2, std::bind(&main_menu::on_quit_button_click, std::ref(*this)));
+        quit_button_ = simple_button(win_, 0.2, 0.1, std::bind(&main_menu::on_quit_button_click, std::ref(*this)));
         quit_button_.set_background(resource_manager_->acquire<sf::Texture>("frame"));
-        quit_button_.set_text("Quit", font, 12);
+        quit_button_.set_text("Quit", font, 24);
         quit_button_.set_center(0.5, 0.6);
     }
 

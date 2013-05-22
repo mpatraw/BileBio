@@ -21,32 +21,27 @@ int main()
 
     sf::Font font;
     font.loadFromFile("resources/Nouveau_IBM.ttf");
-    sf::Font gb;
-    gb.loadFromFile("resources/Pokemon GB.ttf");
-    sf::Texture title;
-    title.loadFromFile("resources/title.png");
-    sf::Texture vine;
-    vine.loadFromFile("resources/vine.png");
-    sf::Texture frame;
-    frame.loadFromFile("resources/frame.png");
-    sf::Texture dirt;
-    dirt.loadFromFile("resources/dirt.png");
-    sf::Texture rock;
-    rock.loadFromFile("resources/rock.png");
-    sf::Texture grass;
-    grass.loadFromFile("resources/grass.png");
-    sf::Texture tree;
-    tree.loadFromFile("resources/tree.png");
-
     rm.manage<sf::Font>("Nouveau_IBM", font);
-    rm.manage<sf::Font>("Pokemon GB", gb);
-    rm.manage<sf::Texture>("title", title);
-    rm.manage<sf::Texture>("vine", vine);
-    rm.manage<sf::Texture>("frame", frame);
-    rm.manage<sf::Texture>("dirt", dirt);
-    rm.manage<sf::Texture>("rock", rock);
-    rm.manage<sf::Texture>("grass", grass);
-    rm.manage<sf::Texture>("tree", tree);
+    font.loadFromFile("resources/Pokemon GB.ttf");
+    rm.manage<sf::Font>("Pokemon GB", font);
+    sf::Texture sprite;
+    sprite.loadFromFile("resources/title.png");
+    rm.manage<sf::Texture>("title", sprite);
+    sprite.loadFromFile("resources/vine.png");
+    rm.manage<sf::Texture>("vine", sprite);
+    sprite.loadFromFile("resources/frame.png");
+    rm.manage<sf::Texture>("frame", sprite);
+    sprite.loadFromFile("resources/dirt.png");
+    rm.manage<sf::Texture>("dirt", sprite);
+    sprite.loadFromFile("resources/rock.png");
+    rm.manage<sf::Texture>("rock", sprite);
+    sprite.loadFromFile("resources/grass.png");
+    rm.manage<sf::Texture>("grass", sprite);
+    sprite.loadFromFile("resources/tree.png");
+    rm.manage<sf::Texture>("tree", sprite);
+    sprite.loadFromFile("resources/player.png");
+    rm.manage<sf::Texture>("player", sprite);
+
 
     screen_manager sm;
     sm.push_screen(new main_menu(&window, &sm, &rm));
