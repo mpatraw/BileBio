@@ -41,6 +41,10 @@ int main()
     rm.manage<sf::Texture>("tree", sprite);
     sprite.loadFromFile("resources/player.png");
     rm.manage<sf::Texture>("player", sprite);
+    sprite.loadFromFile("resources/water1.png");
+    rm.manage<sf::Texture>("water1", sprite);
+    sprite.loadFromFile("resources/water2.png");
+    rm.manage<sf::Texture>("water2", sprite);
 
 
     screen_manager sm;
@@ -64,7 +68,7 @@ int main()
         sm.update(dt.asSeconds());
 
         window.clear();
-        sm.render(dt.asSeconds());
+        sm.render();
         window.display();
     }
 

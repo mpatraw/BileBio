@@ -22,7 +22,7 @@ class simple_ui
 public:
     virtual void on_event(const sf::Event &event) = 0;
     virtual void on_update(double dt) = 0;
-    virtual void on_render(double dt) = 0;
+    virtual void on_render() = 0;
 };
 
 class simple_button : public simple_ui
@@ -64,9 +64,8 @@ public:
         (void)dt;
     }
 
-    virtual void on_render(double dt)
+    virtual void on_render()
     {
-        (void)dt;
         win_->draw(bg_sprite_);
         win_->draw(text_);
     }

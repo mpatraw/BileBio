@@ -20,7 +20,7 @@ public:
     virtual void on_exit() = 0;
     virtual void on_event(const sf::Event &event) = 0;
     virtual void on_update(double dt) = 0;
-    virtual void on_render(double dt) = 0;
+    virtual void on_render() = 0;
 };
 
 class screen_manager : private boost::noncopyable
@@ -66,7 +66,7 @@ public:
         for (; top < (ssize_t)screen_stack_.size(); ++top)
             screen_stack_[top]->on_update(dt);
     }
-    void render(double dt)
+    void render()
     {
         ssize_t top = (ssize_t)screen_stack_.size() - 1;
         for (; top >= 0; --top)
@@ -75,7 +75,7 @@ public:
         if (top < 0)
             top = 0;
         for (; top < (ssize_t)screen_stack_.size(); ++top)
-            screen_stack_[top]->on_render(dt);
+            screen_stack_[top]->on_render();
     }
 
 private:

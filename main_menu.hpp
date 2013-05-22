@@ -100,12 +100,11 @@ public:
         new_game_button_.on_update(dt);
     }
 
-    virtual void on_render(double dt)
+    virtual void on_render()
     {
-        (void)dt;
         win_->draw(title_sprite_);
-        quit_button_.on_render(dt);
-        new_game_button_.on_render(dt);
+        quit_button_.on_render();
+        new_game_button_.on_render();
     }
 
 protected:

@@ -11,6 +11,98 @@
 #include "simple_ui.hpp"
 #include "screen_manager.hpp"
 
+class animation : private boost::noncopyable
+{
+public:
+    animation(sf::RenderWindow *win=nullptr, double width=0.0, double height=0.0, double duration=0.0, bool loop=false) :
+        win_(win), width_(width), height_(height), duration_(duration), loop_(loop)
+    {
+        x_ = 0.0;
+        y_ = 0.0;
+        current_frame_ = -1;
+        paused_ = true;
+        done_ = true;
+        time_accumulator_ = 0.0;
+    }
+
+    void set_render_window(sf::RenderWindow *win)
+    {
+        win_ = win;
+    }
+
+    void set_size(double width, double height)
+    {
+        width_ = width;
+        height_ = height;
+    }
+
+    void set_position(double x, double y)
+    {
+        x_ = x;
+        y_ = y;
+    }
+    void set_loop(bool loop=true) { loop_ = loop; }
+    void set_duration(double d) { duration_ = d; }
+
+    void start() { paused_ = false; current_frame_ = 0; done_ = false; time_accumulator_ = 0.0; }
+    void pause() { paused_ = true; }
+    void resume() { paused_ = false; }
+    void stop() { paused_ = true; current_frame_ = 0; done_ = true; time_accumulator_ = 0.0; }
+
+    bool is_done() const { return done_; }
+
+    void clear_frames()
+    {
+        current_frame_ = -1;
+        frames_.clear();
+    }
+
+    void add_frame(const sf::Texture &tex)
+    {
+        sf::RectangleShape sprite(sf::Vector2f(width_, height_));
+        sprite.setTexture(&tex);
+        frames_.push_back(std::move(sprite));
+    }
+
+    void update(double dt)
+    {
+        if (!paused_ && (!done_ || loop_))
+        {
+            time_accumulator_ += dt;
+            if (time_accumulator_ >= duration_ / frames_.size() * current_frame_)
+            {
+                ++current_frame_;
+                if (current_frame_ >= (ssize_t)frames_.size())
+                {
+                    done_ = true;
+                    current_frame_ = 0;
+                    time_accumulator_ -= duration_;
+                }
+            }
+        }
+    }
+
+    void render()
+    {
+        frames_[current_frame_].setPosition(x_, y_);
+        win_->draw(frames_[current_frame_]);
+    }
+
+private:
+    sf::RenderWindow *win_;
+    double width_;
+    double height_;
+    double duration_;
+    bool loop_;
+    std::vector<sf::RectangleShape> frames_;
+    double x_;
+    double y_;
+    ssize_t current_frame_;
+    bool paused_;
+    bool done_;
+    double time_accumulator_;
+};
+
 enum ground
 {
     g_dirt,
@@ -115,10 +207,23 @@ public:
         hud_view_.setViewport(sf::FloatRect(0, 0.66, 1.0, 1.0));
         grass_ = sf::RectangleShape(sf::Vector2f(0.2, 0.2));
         grass_.setTexture(&resource_manager_->acquire<sf::Texture>("grass"));
-        tree_ = sf::RectangleShape(sf::Vector2f(0.2, 0.2));
-        tree_.setTexture(&resource_manager_->acquire<sf::Texture>("tree"));
-        player_ = sf::RectangleShape(sf::Vector2f(0.2, 0.2));
-        player_.setTexture(&resource_manager_->acquire<sf::Texture>("player"));
+        frame_ = sf::RectangleShape(sf::Vector2f(1.0, 0.33));
+        frame_.setTexture(&resource_manager_->acquire<sf::Texture>("frame"));
+
+        water_anim_.set_render_window(win_);
+        water_anim_.set_size(0.2, 0.2);
+        water_anim_.set_duration(1.0);
+        water_anim_.set_loop(true);
+        water_anim_.add_frame(resource_manager_->acquire<sf::Texture>("water1"));
+        water_anim_.add_frame(resource_manager_->acquire<sf::Texture>("water2"));
+        water_anim_.start();
+
+        player_anim_.set_render_window(win_);
+        player_anim_.set_size(0.2, 0.2);
+        player_anim_.set_duration(0.5);
+        player_anim_.set_loop(true);
+        player_anim_.add_frame(resource_manager_->acquire<sf::Texture>("player"));
+        player_anim_.start();
     }
 
     virtual ~game() { }
@@ -140,7 +245,6 @@ public:
 
     virtual void on_event(const sf::Event &event)
     {
-        (void)event;
         if (event.type == sf::Event::KeyPressed)
         {
             if (event.key.code == sf::Keyboard::W)
@@ -164,13 +268,12 @@ public:
 
     virtual void on_update(double dt)
     {
-        (void)dt;
+        water_anim_.update(dt);
+        player_anim_.update(dt);
     }
 
-    virtual void on_render(double dt)
+    virtual void on_render()
     {
-        (void)dt;
-
         win_->setView(game_view_);
         auto spr_size = grass_.getSize();
 
@@ -182,14 +285,19 @@ public:
                 win_->draw(grass_);
                 if (forest_.tile_at(x, y).o == o_tree)
                 {
-                    tree_.setPosition(x * spr_size.x, y * spr_size.y);
-                    win_->draw(tree_);
+                    water_anim_.set_position(x * spr_size.x, y * spr_size.y);
+                    water_anim_.render();
                 }
             }
         }
 
-        player_.setPosition(game_view_.getCenter() - sf::Vector2f(0.1, 0.1));
-        win_->draw(player_);
+        auto pos = game_view_.getCenter() - sf::Vector2f(0.1, 0.1);
+        player_anim_.set_position(pos.x, pos.y);
+        player_anim_.render();
+
+        win_->setView(hud_view_);
+        win_->draw(frame_);
+
     }
 
 protected:
@@ -201,8 +309,14 @@ protected:
     forest forest_;
 
     sf::RectangleShape grass_;
-    sf::RectangleShape tree_;
-    sf::RectangleShape player_;
+    sf::RectangleShape frame_;
+    animation water_anim_;
+    animation player_anim_;
+    double player_x_;
+    double player_y_;
+    bool player_moving_;
+    double player_dx_;
+    double player_dy_;
 };
 
 #endif

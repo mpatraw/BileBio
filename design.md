@@ -20,10 +20,20 @@
 * Simpler, more intuitive skill progression. (And controls will follow)
   * WIP
 * Animal as the playable character. (Probably several to pick from)
-  * WIP
 
+## Mechanics
+
+### Player
+
+The player will have two stats: Health and energy. Energy's use depends on the class, but in
+all cases it denotes how tired the player is. Three for each is about average.
+
+### Plants
+
+Plants are not hostile by default, but they can grow hostile flowers, vines, but also fruit
+to replenish energy.
 
 ## TODO
 
-* Get a basic framework: Menu, Settings, etc.
-* Get a character moving around.
+[-] Get a basic framework: Menu, Settings, etc.
+[-] Get a character moving around.
