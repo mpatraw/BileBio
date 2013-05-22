@@ -10,6 +10,51 @@
 #include "resource_manager.hpp"
 #include "screen_manager.hpp"
 
+// Yay for SFINAE
+template <typename T>
+struct has_load_from_file
+{
+    typedef char yes[1];
+    typedef char no[2];
+
+    template <typename U, bool (U::*)(const std::string &)> struct sfinae {};
+    template <typename U> static yes &test(sfinae<U, &U::loadFromFile> *);
+    template <typename U> static no &test(...);
+    static const bool has = sizeof(test<T>(0)) == sizeof(yes);
+};
+
+template <typename T>
+struct has_load_from_file_int_rect
+{
+    typedef char yes[1];
+    typedef char no[2];
+
+    template <typename U, bool (U::*)(const std::string &, const sf::IntRect &)> struct sfinae {};
+    template <typename U> static yes &test(sfinae<U, &U::loadFromFile> *);
+    template <typename U> static no &test(...);
+    static const bool has = sizeof(test<T>(0)) == sizeof(yes);
+};
+
+template <class T, class = typename std::enable_if<has_load_from_file<T>::has>::type>
+static inline bool load_resource(resource_manager &rm, const std::string &key, const std::string &filename)
+{
+    T t;
+    if (!t.loadFromFile(filename))
+        return false;
+    rm.manage<T>(key, t);
+    return true;
+}
+
+template <class T, class = typename std::enable_if<has_load_from_file_int_rect<T>::has>::type>
+static inline bool load_resource(resource_manager &rm, const std::string &key, const std::string &filename, const sf::IntRect &rect=sf::IntRect())
+{
+    T t;
+    if (!t.loadFromFile(filename, rect))
+        return false;
+    rm.manage<T>(key, t);
+    return true;
+}
+
 int main()
 {
     auto vm = sf::VideoMode(320, 480, sf::Style::Titlebar | sf::Style::Close);
@@ -19,32 +64,18 @@ int main()
 
     resource_manager rm;
 
-    sf::Font font;
-    font.loadFromFile("resources/Nouveau_IBM.ttf");
-    rm.manage<sf::Font>("Nouveau_IBM", font);
-    font.loadFromFile("resources/Pokemon GB.ttf");
-    rm.manage<sf::Font>("Pokemon GB", font);
-    sf::Texture sprite;
-    sprite.loadFromFile("resources/title.png");
-    rm.manage<sf::Texture>("title", sprite);
-    sprite.loadFromFile("resources/vine.png");
-    rm.manage<sf::Texture>("vine", sprite);
-    sprite.loadFromFile("resources/frame.png");
-    rm.manage<sf::Texture>("frame", sprite);
-    sprite.loadFromFile("resources/dirt.png");
-    rm.manage<sf::Texture>("dirt", sprite);
-    sprite.loadFromFile("resources/rock.png");
-    rm.manage<sf::Texture>("rock", sprite);
-    sprite.loadFromFile("resources/grass.png");
-    rm.manage<sf::Texture>("grass", sprite);
-    sprite.loadFromFile("resources/tree.png");
-    rm.manage<sf::Texture>("tree", sprite);
-    sprite.loadFromFile("resources/player.png");
-    rm.manage<sf::Texture>("player", sprite);
-    sprite.loadFromFile("resources/water.png", sf::IntRect(0, 0, 16, 16));
-    rm.manage<sf::Texture>("water1", sprite);
-    sprite.loadFromFile("resources/water.png", sf::IntRect(16, 0, 16, 16));
-    rm.manage<sf::Texture>("water2", sprite);
+    load_resource<sf::Font>(rm, "Nouveau_IBM", "resources/Nouveau_IBM.ttf");
+    load_resource<sf::Font>(rm, "Pokemon GB", "resources/Pokemon GB.ttf");
+    load_resource<sf::Texture>(rm, "title", "resources/title.png");
+    load_resource<sf::Texture>(rm, "vine", "resources/vine.png");
+    load_resource<sf::Texture>(rm, "frame", "resources/frame.png");
+    load_resource<sf::Texture>(rm, "dirt", "resources/dirt.png");
+    load_resource<sf::Texture>(rm, "rock", "resources/rock.png");
+    load_resource<sf::Texture>(rm, "grass", "resources/grass.png");
+    load_resource<sf::Texture>(rm, "tree", "resources/tree.png");
+    load_resource<sf::Texture>(rm, "player", "resources/player.png");
+    load_resource<sf::Texture>(rm, "water1", "resources/water.png", sf::IntRect(0, 0, 16, 16));
+    load_resource<sf::Texture>(rm, "water2", "resources/water.png", sf::IntRect(16, 0, 16, 16));
 
 
     screen_manager sm;
