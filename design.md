@@ -28,10 +28,18 @@
 The player will have two stats: Health and energy. Energy's use depends on the animal, but in
 all cases it denotes how tired the player is. Three for each is about average.
 
+#### Possible Animals
+
+* Jaguar (or Panther). Can pounce, average health, strong energy, strong attack.
+* Snake. Can slither through vines, weak health, average energy, weak attack.
+* Bear. Strong health, strong energy, average attack.
+* Tiger. Strong health, average energy, strong attack.
+
 ### Plants
 
 Plants are not hostile by default, but they can grow hostile flowers, vines, but also fruit
-to replenish energy.
+to replenish energy. Perhaps you can even find treasure that you can feed the plant to
+make it grow something or change it's disposition.
 
 As you progress through the levels, plants increase in hostility and grow more interesting
 and deadly flowers and vines.

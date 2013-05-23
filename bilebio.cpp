@@ -6,7 +6,7 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "main_menu.hpp"
+#include "main_menu_screen.hpp"
 #include "resource_manager.hpp"
 #include "screen_manager.hpp"
 
@@ -79,7 +79,7 @@ int main()
 
 
     screen_manager sm;
-    sm.push_screen(new main_menu(&window, &sm, &rm));
+    sm.push_screen(new main_menu_screen(&window, &sm, &rm));
 
     sf::Clock delta_clock;
 
