@@ -157,11 +157,6 @@ protected:
     animation water_anim_;
 };
 
-enum direction
-{
-    d_up, d_down, d_left, d_right
-};
-
 class player_controller
 {
 public:
@@ -172,7 +167,7 @@ public:
         player_anim_.set_loops(true);
         player_anim_.add_frame("player");
         player_anim_.start();
-        player_location_ = {the_game_->get_player().get_x() * 0.2, the_game_->get_player().get_y() * 0.2};
+        player_location_ = {the_game_->get_player().get_coord().x * 0.2, the_game_->get_player().get_coord().y * 0.2};
     }
 
     virtual ~player_controller() { }

@@ -68,7 +68,10 @@ public:
         {
             for (size_t x = 0; x < width; ++x)
             {
-                std::cout << (unsigned)tile_at(x, y);
+                if (tile_at(x, y) >= t_dirt)
+                    std::cout << ".";
+                else
+                    std::cout << "#";
             }
             std::cout << std::endl;
         }
@@ -96,14 +99,16 @@ private:
     std::vector<tile> tiles_;
 };
 
-struct attributes
+struct coord
+{
+    ssize_t x;
+    ssize_t y;
+};
+
+struct vitals
 {
     ssize_t hearts;
     ssize_t max_hearts;
-    ssize_t energy;
-    ssize_t max_energy;
-    ssize_t damage;
-    double chance_to_hit;
 };
 
 class entity : private boost::noncopyable
@@ -112,27 +117,26 @@ public:
     entity(region *reg) :
         region_(reg)
     {
-        attributes_ = {
-            3, 3, 3, 3, 1, 0.5
-        };
     }
     virtual ~entity() { }
 
-    virtual ssize_t get_x() const { return x_; }
-    virtual ssize_t get_y() const { return y_; }
+    virtual const coord &get_coord() const { return coord_; }
+    virtual coord &get_coord() { return coord_; }
 
-    virtual const attributes &get_attributes() const { return attributes_; }
-    virtual attributes &get_attributes() { return attributes_; }
+    virtual const vitals &get_vitals() const { return vitals_; }
+    virtual vitals &get_vitals() { return vitals_; }
 
-    virtual bool is_dead() const { return attributes_.hearts <= 0; }
+    virtual bool is_dead() const { return vitals_.hearts <= 0; }
     virtual bool is_alive() const { return !is_dead(); }
-
 protected:
-    ssize_t x_;
-    ssize_t y_;
-    attributes attributes_;
+    coord coord_;
+    vitals vitals_;
 
     region *region_;
+};
+
+struct biomass
+{
 };
 
 class plant : public entity, private boost::noncopyable
@@ -140,17 +144,39 @@ class plant : public entity, private boost::noncopyable
 public:
     plant(region *reg, std::vector<std::shared_ptr<plant>> *rlist, std::map<std::tuple<ssize_t, ssize_t>, std::shared_ptr<plant>> *pmap) :
         entity(reg), root_list_(rlist), plant_map_(pmap)
-    { }
+    {
+        parent_ = nullptr;
+    }
     virtual ~plant() { }
+
+    virtual bool is_root() const { return parent_ == nullptr; }
+    virtual bool is_child() const { return !is_root(); }
 
 protected:
     std::vector<std::shared_ptr<plant>> *root_list_;
     std::map<std::tuple<ssize_t, ssize_t>, std::shared_ptr<plant>> *plant_map_;
+
+    std::shared_ptr<plant> parent_;
+    std::vector<std::shared_ptr<plant>> connected_to_;
+};
+
+struct attributes
+{
+    ssize_t energy;
+    ssize_t max_energy;
+    ssize_t damage;
+    double chance_to_hit;
 };
 
 class player : public entity, private boost::noncopyable
 {
 public:
+    enum action
+    {
+        act_none,
+        act_moved,
+    };
+
     player(region *reg, std::vector<std::shared_ptr<plant>> *rlist, std::map<std::tuple<ssize_t, ssize_t>, std::shared_ptr<plant>> *pmap) :
         entity(reg), root_list_(rlist), plant_map_(pmap)
     { }
@@ -158,22 +184,25 @@ public:
 
     virtual bool move_by(ssize_t dx, ssize_t dy)
     {
-        return move_to(x_ + dx, y_ + dy);
+        return move_to(coord_.x + dx, coord_.y + dy);
     }
 
     virtual bool move_to(ssize_t x, ssize_t y)
     {
         if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_dirt)
         {
-            x_ = x;
-            y_ = y;
+            coord_ = {x, y};
             return true;
         }
         return false;
     }
+
+    virtual const attributes &get_attributes() const { return attributes_; }
+    virtual attributes &get_attributes() { return attributes_; }
 protected:
     std::vector<std::shared_ptr<plant>> *root_list_;
     std::map<std::tuple<ssize_t, ssize_t>, std::shared_ptr<plant>> *plant_map_;
+    attributes attributes_;
 };
 
 class the_game : private boost::noncopyable
