@@ -60,17 +60,17 @@ The first playable animal will be the panther. Which has the following stats:
 Pounces to a target location dealing double damage that can't miss to a random
 target within 1 square.
 
-*Level 1*: 1 energy, 3 max pounce range
-*Level 2*: 1 energy, 4 max pounce range
-*Level 3*: 1 energy, 5 max pounce range
+**Level 1**: 1 energy, 3 max pounce range
+**Level 2**: 1 energy, 4 max pounce range
+**Level 3**: 1 energy, 5 max pounce range
 ##### 2. Sneak
-*Not sure*
+**Not sure**
 ##### 3. Fury
 Deals damage to every target within 1 square around the panther.
 
-*Level 1*: 1 energy, 1 bonus damage
-*Level 2*: 1 energy, 2 bonus damage
-*Level 3*: 1 energy, 3 bonus damage
+**Level 1**: 1 energy, 1 bonus damage
+**Level 2**: 1 energy, 2 bonus damage
+**Level 3**: 1 energy, 3 bonus damage
 ### Plants
 
 Plants are not hostile by default, but they can grow hostile flowers, vines, but also fruit
