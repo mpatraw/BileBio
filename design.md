@@ -61,7 +61,9 @@ Pounces to a target location dealing double damage that can't miss to a random
 target within 1 square.
 
 **Level 1**: 1 energy, 3 max pounce range
+
 **Level 2**: 1 energy, 4 max pounce range
+
 **Level 3**: 1 energy, 5 max pounce range
 ##### 2. Sneak
 **Not sure**
@@ -69,7 +71,9 @@ target within 1 square.
 Deals damage to every target within 1 square around the panther.
 
 **Level 1**: 1 energy, 1 bonus damage
+
 **Level 2**: 1 energy, 2 bonus damage
+
 **Level 3**: 1 energy, 3 bonus damage
 ### Plants
 
