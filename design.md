@@ -53,7 +53,9 @@ and 10 attributes.
 The first playable animal will be the panther. Which has the following stats:
 
 3 hearts (+1)
+
 3 energy (+1)
+
 2 damage, 66% to hit (+0.5)
 
 ##### 1. Pounce
