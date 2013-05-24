@@ -86,6 +86,27 @@ make it grow something or change it's disposition.
 As you progress through the levels, plants increase in hostility and grow more interesting
 and deadly flowers and vines.
 
+Plants have 3 dispositions: evil, neutral, good. Plants in a good disposition grow
+nice, unharming plants and fruits, plants in an evil disposition grow harmful plants and
+deadly flowers.
+
+**Types of plants**
+* Roots, roots grow vines right next to it.
+* Vines, vines grow at any square within 5.
+  * Vines
+  * Thick vines (lots of health)
+  * Spiny vines (attacks when within 1 square of it)
+* Flowers
+  * Red flowers (spits needles from 5 squares away)
+  * Blue flowers
+* Fruits
+  * Red fruit
+  * Blue fruit
+
+Only roots and vines grow more roots and vines. A growth process is typically 3
+turns, and a plant can only grow 1 thing at a time. Vines grow *towards* the
+player if the player is in range, usually as far away as possible to *trap* the player.
+
 ## TODO
 
 [-] Get a basic framework: Menu, Settings, etc.
