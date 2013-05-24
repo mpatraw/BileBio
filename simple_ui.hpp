@@ -32,7 +32,7 @@ public:
     {
     }
     simple_button(sf::RenderWindow *win, double width, double height, std::function<void()> on_click) :
-        win_ref_(win), width_(width), height_(height), on_click_(on_click)
+        win_(win), width_(width), height_(height), on_click_(on_click)
     {
     }
     virtual ~simple_button() { }
@@ -48,7 +48,7 @@ public:
         {
             auto position = bg_sprite_.getPosition();
             auto size = bg_sprite_.getSize();
-            auto pos = win_ref_->mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+            auto pos = win_->mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
             auto x = pos.x;
             auto y = pos.y;
             if (x >= position.x && x < position.x + size.x &&
@@ -66,8 +66,8 @@ public:
 
     virtual void on_render()
     {
-        win_ref_->draw(bg_sprite_);
-        win_ref_->draw(text_);
+        win_->draw(bg_sprite_);
+        win_->draw(text_);
     }
 
     virtual void set_background(const sf::Texture &tex)
@@ -94,7 +94,7 @@ public:
     }
 
 private:
-    sf::RenderWindow *win_ref_;
+    sf::RenderWindow *win_;
     double width_;
     double height_;
     sf::RectangleShape bg_sprite_;

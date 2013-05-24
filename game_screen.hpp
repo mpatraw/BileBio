@@ -44,8 +44,6 @@ public:
 
     void add_frame(const std::string &str)
     {
-        //sf::RectangleShape sprite(sf::Vector2f(width_, height_));
-        //sprite.setTexture(&tex);
         frames_.push_back(std::move(str));
     }
 
@@ -92,122 +90,142 @@ private:
 
 };
 
-class renderer
+class the_game_renderer
 {
 public:
-    virtual void update(double dt) = 0;
-    virtual void render(sf::RenderWindow *win, const sf::Transform &trans=sf::Transform()) const = 0;
-};
-
-class animation_renderer : public renderer
-{
-public:
-    animation_renderer(resource_manager *rm, animation *anim, double size=0.2) :
-        resource_manager_ref_(rm), animation_ref_(anim), size_(size)
+    the_game_renderer(const resource_manager *sm, const the_game *tg, double tile_size=0.2) :
+        sprite_manager_(sm), the_game_(tg), tile_size_(tile_size)
     {
-        auto frames = anim->get_frames();
-        for (size_t i = 0; i < frames.size(); ++i)
-        {
-            sf::RectangleShape sprite(sf::Vector2f(size_, size_));
-            sprite.setTexture(&resource_manager_ref_->acquire<sf::Texture>(frames[i]));
-            map_[frames[i]] = std::move(sprite);
-        }
-    }
-    virtual ~animation_renderer() { }
-
-    virtual void update(double dt)
-    {
-        animation_ref_->update(dt);
-    }
-
-    virtual void render(sf::RenderWindow *win, const sf::Transform &trans=sf::Transform()) const
-    {
-        win->draw(map_.at(animation_ref_->get_texture()), trans);
-    }
-protected:
-    resource_manager *resource_manager_ref_;
-    animation *animation_ref_;
-    double size_;
-
-    std::unordered_map<std::string, sf::RectangleShape> map_;
-};
-
-class region_renderer : public renderer
-{
-public:
-    region_renderer(resource_manager *rm, region *reg, double tile_size=0.2) :
-        resource_manager_ref_(rm), region_ref_(reg), tile_size_(tile_size)
-    {
-        grass_ = sf::RectangleShape(sf::Vector2f(tile_size_, tile_size_));
-        grass_.setTexture(&resource_manager_ref_->acquire<sf::Texture>("grass"));
-
         water_anim_.set_duration(1.0);
         water_anim_.set_loops(true);
         water_anim_.add_frame("water1");
         water_anim_.add_frame("water2");
         water_anim_.start();
-        water_anim_renderer_.reset(new animation_renderer(rm, &water_anim_));
     }
-    virtual ~region_renderer() { }
+    virtual ~the_game_renderer() { }
 
     virtual void update(double dt)
     {
-        water_anim_renderer_->update(dt);
+        water_anim_.update(dt);
     }
 
     virtual void render(sf::RenderWindow *win, const sf::Transform &trans=sf::Transform()) const
     {
-        (void)trans;
-        for (size_t x = 0; x < region_ref_->get_width(); ++x)
+        const region &reg = the_game_->get_region();
+
+        for (size_t x = 0; x < reg.get_width(); ++x)
         {
-            for (size_t y = 0; y < region_ref_->get_height(); ++y)
+            for (size_t y = 0; y < reg.get_height(); ++y)
             {
-                sf::Transform trans;
-                trans.translate(x * tile_size_, y * tile_size_);
-                win->draw(grass_, trans);
-                if (region_ref_->tile_at(x, y).o == o_tree)
+                sf::Transform t;
+                t.translate(x * tile_size_, y * tile_size_);
+                t.combine(trans);
+                win->draw(sprite_manager_->acquire<sf::RectangleShape>("grass"), t);
+                if (reg.tile_at(x, y).o == o_tree)
                 {
-                    water_anim_renderer_->render(win, trans);
+                    win->draw(sprite_manager_->acquire<sf::RectangleShape>(water_anim_.get_texture()), t);
                 }
             }
         }
     }
 protected:
-    resource_manager *resource_manager_ref_;
-    region *region_ref_;
+    const resource_manager *sprite_manager_;
+    const the_game *the_game_;
     double tile_size_;
 
-    sf::RectangleShape grass_;
     animation water_anim_;
-    std::unique_ptr<animation_renderer> water_anim_renderer_;
 };
+
+class player_controller
+{
+public:
+    player_controller(the_game *tg) :
+        the_game_(tg)
+    {
+
+    }
+
+    virtual ~player_controller() { }
+
+    virtual const sf::Vector2f &get_location() const { return player_location_; }
+
+    virtual void move(double dx, double dy)
+    {
+        if (!player_moving_)
+        {
+            player_delta_ = {dx, dy};
+            player_destination_ = player_location_ + player_delta_;
+            player_moving_ = true;
+            player_timer_ = 0.0;
+        }
+    }
+
+    virtual void update(double dt)
+    {
+        if (player_moving_)
+        {
+            player_timer_ += dt;
+            if (player_timer_ >= 0.5)
+            {
+                player_location_ = player_destination_;
+                player_moving_ = false;
+            }
+            else
+            {
+                player_location_ = sf::Vector2f(
+                    player_location_.x + player_delta_.x * (dt / 0.5),
+                    player_location_.y + player_delta_.y * (dt / 0.5));
+            }
+        }
+    }
+
+    virtual void render(sf::RenderWindow *win)
+    {
+
+    }
+
+protected:
+    the_game *the_game_;
+
+    bool player_moving_;
+    double player_timer_;
+    sf::Vector2f player_location_;
+    sf::Vector2f player_destination_;
+    sf::Vector2f player_delta_;
+};
+
+static inline void manage_sprite(resource_manager &sm, const resource_manager &rm, std::string key, double width, double height)
+{
+    sf::RectangleShape sprite({width, height});
+    sprite.setTexture(&rm.acquire<sf::Texture>(key));
+    sm.manage<sf::RectangleShape>(key, sprite);
+}
 
 class game_screen : public screen, private boost::noncopyable
 {
 public:
-    game_screen(sf::RenderWindow *win, screen_manager *sm, resource_manager *rm) :
-        win_ref_(win), screen_manager_ref_(sm), resource_manager_ref_(rm)
+    game_screen(sf::RenderWindow *win, screen_manager *sm, const resource_manager *rm) :
+        win_(win), screen_manager_(sm), resource_manager_(rm)
     {
         game_view_ = sf::View(sf::FloatRect(0, 0, 1, 1));
         game_view_.setViewport(sf::FloatRect(0, 0, 1.0, 0.66));
         hud_view_ = sf::View(sf::FloatRect(0, 0, 1, 1));
         hud_view_.setViewport(sf::FloatRect(0, 0.66, 1.0, 1.0));
 
+        manage_sprite(sprite_manager_, *resource_manager_, "grass", 0.2, 0.2);
+        manage_sprite(sprite_manager_, *resource_manager_, "water1", 0.2, 0.2);
+        manage_sprite(sprite_manager_, *resource_manager_, "water2", 0.2, 0.2);
+        manage_sprite(sprite_manager_, *resource_manager_, "player", 0.2, 0.2);
+
         player_anim_.set_duration(0.5);
         player_anim_.set_loops(true);
         player_anim_.add_frame("player");
         player_anim_.start();
-        player_anim_renderer_.reset(new animation_renderer(rm, &player_anim_));
 
-        player_dx_ = 0.0;
-        player_dy_ = 0.0;
-        player_destx_ = 0.0;
-        player_desty_ = 0.0;
-        player_moving_ = false;
-        player_timer_ = 0.0;
+        the_game_.reset(new the_game());
+        the_game_renderer_.reset(new the_game_renderer(&sprite_manager_, the_game_.get()));
 
-        region_.reset(new region());
-        region_renderer_.reset(new region_renderer(rm, region_.get()));
+        controller_.reset(new player_controller(the_game_.get()));
     }
 
     virtual ~game_screen() { }
@@ -218,7 +236,6 @@ public:
 
     virtual void on_enter()
     {
-        region_->generate(50, 50);
         std::cout << "game_screen::on_enter" << std::endl;
     }
 
@@ -234,100 +251,56 @@ public:
 
     virtual void on_update(double dt)
     {
-        if (!player_moving_)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
         {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-            {
-                player_destx_ = player_location_.x;
-                player_desty_ = player_location_.y - 0.2;
-                player_dx_ = 0.0;
-                player_dy_ = -0.2;
-                player_moving_ = true;
-                player_timer_ = 0.0;
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-            {
-                player_destx_ = player_location_.x - 0.2;
-                player_desty_ = player_location_.y;
-                player_dx_ = -0.2;
-                player_dy_ = 0.0;
-                player_moving_ = true;
-                player_timer_ = 0.0;
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-            {
-                player_destx_ = player_location_.x;
-                player_desty_ = player_location_.y + 0.2;
-                player_dx_ = 0.0;
-                player_dy_ = 0.2;
-                player_moving_ = true;
-                player_timer_ = 0.0;
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-            {
-                player_destx_ = player_location_.x + 0.2;
-                player_desty_ = player_location_.y;
-                player_dx_ = 0.2;
-                player_dy_ = 0.0;
-                player_moving_ = true;
-                player_timer_ = 0.0;
-            }
+            controller_->move(0.0, -0.2);
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+        {
+            controller_->move(-0.2, 0.0);
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+        {
+            controller_->move(0.0, 0.2);
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+        {
+            controller_->move(0.2, 0.0);
         }
 
-        if (player_moving_)
-        {
-            player_timer_ += dt;
-            if (player_timer_ >= 0.5)
-            {
-                player_location_ = sf::Vector2f(player_destx_, player_desty_);
-                player_moving_ = false;
-            }
-            else
-            {
-                player_location_ = sf::Vector2f(
-                    player_location_.x + player_dx_ * (dt / 0.5),
-                    player_location_.y + player_dy_ * (dt / 0.5));
-            }
-        }
+        controller_->update(dt);
         game_view_.setCenter(
-            player_location_.x + 0.2 / 2,
-            player_location_.y + 0.2 / 2);
-        region_renderer_->update(dt);
-        player_anim_renderer_->update(dt);
+            controller_->get_location().x + 0.2 / 2,
+            controller_->get_location().y + 0.2 / 2);
+        the_game_renderer_->update(dt);
+        player_anim_.update(dt);
     }
 
     virtual void on_render()
     {
-        win_ref_->setView(game_view_);
-        region_renderer_->render(win_ref_);
+        win_->setView(game_view_);
+        the_game_renderer_->render(win_);
         sf::Transform trans;
-        trans.translate(player_location_);
-        player_anim_renderer_->render(win_ref_, trans);
+        trans.translate(controller_->get_location());
+        win_->draw(sprite_manager_.acquire<sf::RectangleShape>(player_anim_.get_texture()), trans);
 
-        win_ref_->setView(hud_view_);
-        //win_ref_->draw(frame_);
+        win_->setView(hud_view_);
+        // Draw HUD here.
     }
 
 protected:
-    sf::RenderWindow *win_ref_;
+    sf::RenderWindow *win_;
     sf::View game_view_;
     sf::View hud_view_;
-    screen_manager *screen_manager_ref_;
-    resource_manager *resource_manager_ref_;
+    screen_manager *screen_manager_;
+    resource_manager sprite_manager_;
+    const resource_manager *resource_manager_;
 
-    std::unique_ptr<region> region_;
+    std::unique_ptr<the_game> the_game_;
+    std::unique_ptr<the_game_renderer> the_game_renderer_;
+    std::unique_ptr<player_controller> controller_;
+
     animation player_anim_;
-    sf::Vector2f player_location_;
-
-    std::unique_ptr<region_renderer> region_renderer_;
-    std::unique_ptr<animation_renderer> player_anim_renderer_;
-
-    bool player_moving_;
-    double player_destx_;
-    double player_desty_;
-    double player_dx_;
-    double player_dy_;
-    double player_timer_;
 };
 
 #endif

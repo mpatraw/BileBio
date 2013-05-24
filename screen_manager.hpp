@@ -31,9 +31,9 @@ public:
 
     size_t number_of_screens() const { return screen_stack_.size(); }
 
-    void push_screen(screen *scr)
+    void push_screen(std::shared_ptr<screen> scr)
     {
-        screen_stack_.push_back(std::unique_ptr<screen>(scr));
+        screen_stack_.push_back(scr);
         scr->on_enter();
     }
     void pop_screen()
@@ -79,7 +79,7 @@ public:
     }
 
 private:
-    std::vector<std::unique_ptr<screen>> screen_stack_;
+    std::vector<std::shared_ptr<screen>> screen_stack_;
 };
 
 #endif

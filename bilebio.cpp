@@ -79,7 +79,7 @@ int main()
 
 
     screen_manager sm;
-    sm.push_screen(new main_menu_screen(&window, &sm, &rm));
+    sm.push_screen(std::make_shared<main_menu_screen>(&window, &sm, &rm));
 
     sf::Clock delta_clock;
 

@@ -108,17 +108,6 @@ public:
     { }
     virtual ~entity() { }
 
-    virtual void move_by(ssize_t dx, ssize_t dy)
-    {
-        move_to(x_ + dx, y_ + dy);
-    }
-
-    virtual void move_to(ssize_t x, ssize_t y)
-    {
-        x_ = x;
-        y_ = y;
-    }
-
 protected:
     ssize_t x_;
     ssize_t y_;
@@ -134,14 +123,46 @@ public:
         entity(reg, elist)
     { }
     virtual ~player() { }
+
+    virtual void move_by(ssize_t dx, ssize_t dy)
+    {
+        move_to(x_ + dx, y_ + dy);
+    }
+
+    virtual void move_to(ssize_t x, ssize_t y)
+    {
+        if (region_ref_->in_bounds(x, y))
+        {
+            x_ = x;
+            y_ = y;
+        }
+    }
 protected:
 
+};
+
+class plant : public entity
+{
+public:
+    plant(region *reg, std::vector<std::unique_ptr<entity>> *elist) :
+        entity(reg, elist)
+    { }
+    virtual ~plant() { }
+protected:
 };
 
 class the_game : public boost::noncopyable
 {
 public:
-    the_game() { }
+    the_game()
+    {
+        the_region_.reset(new region());
+        the_region_->generate(50, 50);
+        the_player_.reset(new player(the_region_.get(), &entity_list_));
+    }
+
+    const region &get_region() const { return *the_region_.get(); }
+    const player &get_player() const { return *the_player_.get(); }
 
 private:
     std::unique_ptr<region> the_region_;
