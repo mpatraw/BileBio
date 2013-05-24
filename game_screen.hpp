@@ -176,37 +176,33 @@ public:
 
     virtual void update(double dt)
     {
-        ssize_t dx, dy;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+        if (!player_moving_)
         {
-            dx = 0;
-            dy = -1;
+            ssize_t dx = 0, dy = 0;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+            {
+                dx = 0;
+                dy = -1;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+            {
+                dx = -1;
+                dy = 0;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+            {
+                dx = 0;
+                dy = 1;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+            {
+                dx = 1;
+                dy = 0;
+            }
+            if (dx != 0 || dy != 0)
+                the_game_->move_player_by(dx, dy);
         }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-        {
-            dx = -1;
-            dy = 0;
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-        {
-            dx = 0;
-            dy = 1;
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-        {
-            dx = 1;
-            dy = 0;
-        }
-
-        if (!player_moving_ && the_game_->move_player_by(dx, dy))
-        {
-            player_delta_ = {dx * 0.2, dy * 0.2};
-            player_destination_ = player_location_ + player_delta_;
-            player_moving_ = true;
-            player_timer_ = 0.0;
-        }
-
-        if (player_moving_)
+        else
         {
             player_timer_ += dt;
             if (player_timer_ >= 0.5)
@@ -221,6 +217,7 @@ public:
                     player_location_.y + player_delta_.y * (dt / 0.5));
             }
         }
+
         player_anim_.update(dt);
     }
 
@@ -229,6 +226,14 @@ public:
         sf::Transform trans;
         trans.translate(player_location_);
         win->draw(sprite_manager_->acquire<sf::RectangleShape>(player_anim_.get_texture()), trans);
+    }
+
+    virtual void player_moved()
+    {
+        player_destination_ = {the_game_->get_player().get_coord().x * 0.2, the_game_->get_player().get_coord().y * 0.2};
+        player_delta_ = player_destination_ - player_location_;
+        player_moving_ = true;
+        player_timer_ = 0.0;
     }
 
 protected:
@@ -267,7 +272,9 @@ public:
         manage_sprite(sprite_manager_, *resource_manager_, "water2", 0.2, 0.2);
         manage_sprite(sprite_manager_, *resource_manager_, "player", 0.2, 0.2);
 
-        the_game_.reset(new the_game());
+        using std::placeholders::_1;
+        using std::placeholders::_2;
+        the_game_.reset(new the_game(std::bind(&game_screen::on_action, std::ref(*this), _1, _2)));
         the_game_renderer_.reset(new the_game_renderer(&sprite_manager_, the_game_.get()));
 
         controller_.reset(new player_controller(the_game_.get(), &sprite_manager_));
@@ -310,6 +317,18 @@ public:
         controller_->render(win_);
         win_->setView(hud_view_);
         // Draw HUD here.
+    }
+
+    virtual void on_action(entity *src, entity::action act)
+    {
+        (void)act;
+        if (src == &the_game_->get_player())
+        {
+            controller_->player_moved();
+        }
+        else
+        {
+        }
     }
 
 protected:

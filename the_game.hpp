@@ -114,6 +114,12 @@ struct vitals
 class entity : private boost::noncopyable
 {
 public:
+    enum action
+    {
+        act_move,
+        act_grow,
+        act_attack,
+    };
     entity(region *reg) :
         region_(reg)
     {
@@ -208,7 +214,8 @@ protected:
 class the_game : private boost::noncopyable
 {
 public:
-    the_game()
+    the_game(std::function<void(entity *src, entity::action act)> on_action) :
+        on_action_(on_action)
     {
         the_region_.reset(new region());
         the_region_->generate(50, 50);
@@ -220,14 +227,16 @@ public:
     const region &get_region() const { return *the_region_.get(); }
     const player &get_player() const { return *the_player_.get(); }
 
-    bool move_player_by(ssize_t dx, ssize_t dy)
+    void move_player_by(ssize_t dx, ssize_t dy)
     {
-        return the_player_->move_by(dx, dy);
+        if (the_player_->move_by(dx, dy))
+            on_action_(the_player_.get(), entity::act_move);
     }
 
 private:
     std::unique_ptr<region> the_region_;
     std::unique_ptr<player> the_player_;
+    std::function<void(entity*src, entity::action act)> on_action_;
 
     std::vector<std::shared_ptr<plant>> root_list_;
     std::map<std::tuple<ssize_t, ssize_t>, std::shared_ptr<plant>> plant_map_;

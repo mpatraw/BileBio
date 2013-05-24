@@ -98,14 +98,16 @@ deadly flowers.
   * Spiny vines (attacks when within 1 square of it)
 * Flowers
   * Red flowers (spits needles from 5 squares away)
-  * Blue flowers
+  * Blue flowers (spits energy draining needles from 5 squares away)
 * Fruits
-  * Red fruit
-  * Blue fruit
+  * Red fruit (drops health)
+  * Yellow fruit (drops energy)
 
 Only roots and vines grow more roots and vines. A growth process is typically 3
 turns, and a plant can only grow 1 thing at a time. Vines grow *towards* the
 player if the player is in range, usually as far away as possible to *trap* the player.
+
+A vine has a chance to grow into a fruit or flower, instead of expanding.
 
 ## TODO
 
