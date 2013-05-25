@@ -6,9 +6,9 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "main_menu_screen.hpp"
-#include "resource_manager.hpp"
-#include "screen_manager.hpp"
+#include <main_menu_screen.hpp>
+#include <screen_manager.hpp>
+#include <utils/resource_manager.hpp>
 
 // Yay for SFINAE
 template <typename T>
@@ -69,10 +69,13 @@ int main()
     load_resource<sf::Texture>(rm, "title", "resources/title.png");
     load_resource<sf::Texture>(rm, "vine", "resources/vine.png");
     load_resource<sf::Texture>(rm, "frame", "resources/frame.png");
+    load_resource<sf::Texture>(rm, "heart", "resources/heart.png");
+    load_resource<sf::Texture>(rm, "energy", "resources/energy.png");
     load_resource<sf::Texture>(rm, "dirt", "resources/dirt.png");
     load_resource<sf::Texture>(rm, "rock", "resources/rock.png");
     load_resource<sf::Texture>(rm, "grass", "resources/grass.png");
     load_resource<sf::Texture>(rm, "tree", "resources/tree.png");
+    load_resource<sf::Texture>(rm, "root", "resources/root.png");
     load_resource<sf::Texture>(rm, "player", "resources/player.png");
     load_resource<sf::Texture>(rm, "water1", "resources/water.png", sf::IntRect(0, 0, 16, 16));
     load_resource<sf::Texture>(rm, "water2", "resources/water.png", sf::IntRect(16, 0, 16, 16));

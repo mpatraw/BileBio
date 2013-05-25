@@ -4,10 +4,10 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "game_screen.hpp"
-#include "resource_manager.hpp"
-#include "simple_ui.hpp"
-#include "screen_manager.hpp"
+#include <game_screen.hpp>
+#include <screen_manager.hpp>
+#include <utils/resource_manager.hpp>
+#include <ui/simple_ui.hpp>
 
 /*
 #include <boost/property_tree/ptree.hpp>

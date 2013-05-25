@@ -6,7 +6,7 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "resource_manager.hpp"
+#include <utils/resource_manager.hpp>
 
 class screen_manager;
 

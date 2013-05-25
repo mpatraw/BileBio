@@ -8,93 +8,20 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "resource_manager.hpp"
-#include "simple_ui.hpp"
-#include "screen_manager.hpp"
-#include "the_game.hpp"
+#include <screen_manager.hpp>
+#include <game/the_game.hpp>
+#include <utils/animation_manager.hpp>
+#include <utils/resource_manager.hpp>
+#include <ui/simple_ui.hpp>
 
-class animation : private boost::noncopyable
-{
-public:
-    animation(double duration=0.0, bool loop=false) :
-        duration_(duration),
-        loops_(loop)
-    {
-        current_frame_ = -1;
-        paused_ = true;
-        done_ = true;
-        time_accumulator_ = 0.0;
-    }
-
-    void set_loops(bool loops=true) { loops_ = loops; }
-    void set_duration(double d) { duration_ = d; }
-
-    void start() { paused_ = false; current_frame_ = 0; done_ = false; time_accumulator_ = 0.0; }
-    void pause() { paused_ = true; }
-    void resume() { paused_ = false; }
-    void stop() { paused_ = true; current_frame_ = 0; done_ = true; time_accumulator_ = 0.0; }
-
-    bool is_done() const { return done_; }
-
-    void clear_frames()
-    {
-        current_frame_ = -1;
-        frames_.clear();
-    }
-
-    void add_frame(const std::string &str)
-    {
-        frames_.push_back(std::move(str));
-    }
-
-    const std::vector<std::string> &get_frames() const { return frames_; }
-
-    void update(double dt)
-    {
-        if (!paused_ && (!done_ || loops_))
-        {
-            time_accumulator_ += dt;
-            if (time_accumulator_ >= duration_ / frames_.size() * current_frame_)
-            {
-                ++current_frame_;
-                if (current_frame_ >= (ssize_t)frames_.size())
-                {
-                    done_ = true;
-                    current_frame_ = 0;
-                    time_accumulator_ -= duration_;
-                }
-            }
-        }
-    }
-
-    const std::string &get_texture() const
-    {
-        return frames_[current_frame_];
-    }
-
-private:
-    double duration_;
-    bool loops_;
-    std::vector<std::string> frames_;
-    ssize_t current_frame_;
-    bool paused_;
-    bool done_;
-    double time_accumulator_;
-};
-
-class state_animator : private boost::noncopyable
-{
-public:
-
-private:
-
-};
+static constexpr double tiles_per_screen = 5.0;
+static constexpr double tile_size = 1.0 / tiles_per_screen;
 
 class the_game_renderer
 {
 public:
-    the_game_renderer(const resource_manager *sm, const the_game *tg, double tile_size=0.2) :
-        sprite_manager_(sm), the_game_(tg), tile_size_(tile_size)
+    the_game_renderer(const resource_manager *sm, const the_game *tg) :
+        sprite_manager_(sm), the_game_(tg)
     {
         water_anim_.set_duration(1.0);
         water_anim_.set_loops(true);
@@ -118,7 +45,7 @@ public:
             for (size_t y = 0; y < reg.get_height(); ++y)
             {
                 sf::Transform t;
-                t.translate(x * tile_size_, y * tile_size_);
+                t.translate(x * tile_size, y * tile_size);
                 t.combine(trans);
                 win->draw(sprite_manager_->acquire<sf::RectangleShape>("grass"), t);
                 switch (reg.tile_at(x, y))
@@ -146,13 +73,17 @@ public:
                     default:
                         break;
                 }
+
+                // Render plants.
+                auto pl = the_game_->get_plant_at(x, y);
+                if (pl)
+                    win->draw(sprite_manager_->acquire<sf::RectangleShape>("root"), t);
             }
         }
     }
 protected:
     const resource_manager *sprite_manager_;
     const the_game *the_game_;
-    double tile_size_;
 
     animation water_anim_;
 };
@@ -163,11 +94,14 @@ public:
     player_controller(the_game *tg, resource_manager *sm) :
         the_game_(tg), sprite_manager_(sm)
     {
-        player_anim_.set_duration(0.5);
-        player_anim_.set_loops(true);
-        player_anim_.add_frame("player");
-        player_anim_.start();
-        player_location_ = {the_game_->get_player().get_coord().x * 0.2, the_game_->get_player().get_coord().y * 0.2};
+        player_anim_.set_state("walking");
+        player_anim_.get_animation().set_duration(0.5);
+        player_anim_.get_animation().set_loops(true);
+        player_anim_.get_animation().add_frame("player");
+        player_anim_.get_animation().start();
+        player_location_ = {the_game_->get_player().get_coord().x * tile_size, the_game_->get_player().get_coord().y * tile_size};
+        player_destination_ = {the_game_->get_player().get_coord().x * tile_size, the_game_->get_player().get_coord().y * tile_size};
+        player_moving_ = false;
     }
 
     virtual ~player_controller() { }
@@ -200,7 +134,7 @@ public:
                 dy = 0;
             }
             if (dx != 0 || dy != 0)
-                the_game_->move_player_by(dx, dy);
+                the_game_->player_act(dx, dy, player::act_move);
         }
         else
         {
@@ -209,6 +143,7 @@ public:
             {
                 player_location_ = player_destination_;
                 player_moving_ = false;
+                the_game_->rest_act();
             }
             else
             {
@@ -218,29 +153,34 @@ public:
             }
         }
 
-        player_anim_.update(dt);
+        player_anim_.get_animation().update(dt);
     }
 
     virtual void render(sf::RenderWindow *win)
     {
         sf::Transform trans;
         trans.translate(player_location_);
-        win->draw(sprite_manager_->acquire<sf::RectangleShape>(player_anim_.get_texture()), trans);
+        win->draw(sprite_manager_->acquire<sf::RectangleShape>(player_anim_.get_animation().get_texture()), trans);
     }
 
-    virtual void player_moved()
+    virtual void player_did(entity::did did)
     {
-        player_destination_ = {the_game_->get_player().get_coord().x * 0.2, the_game_->get_player().get_coord().y * 0.2};
-        player_delta_ = player_destination_ - player_location_;
-        player_moving_ = true;
-        player_timer_ = 0.0;
+        if (did == entity::did_move)
+        {
+            player_destination_ = {the_game_->get_player().get_coord().x * tile_size,
+                the_game_->get_player().get_coord().y * tile_size};
+            player_delta_ = player_destination_ - player_location_;
+            player_moving_ = true;
+            player_timer_ = 0.0;
+        }
     }
 
 protected:
     the_game *the_game_;
     resource_manager *sprite_manager_;
-    animation player_anim_;
+    state_animator player_anim_;
 
+    // Smooth scrolling.
     bool player_moving_;
     double player_timer_;
     sf::Vector2f player_location_;
@@ -266,15 +206,19 @@ public:
         hud_view_ = sf::View(sf::FloatRect(0, 0, 1, 1));
         hud_view_.setViewport(sf::FloatRect(0, 0.66, 1.0, 1.0));
 
-        manage_sprite(sprite_manager_, *resource_manager_, "grass", 0.2, 0.2);
-        manage_sprite(sprite_manager_, *resource_manager_, "dirt", 0.2, 0.2);
-        manage_sprite(sprite_manager_, *resource_manager_, "water1", 0.2, 0.2);
-        manage_sprite(sprite_manager_, *resource_manager_, "water2", 0.2, 0.2);
-        manage_sprite(sprite_manager_, *resource_manager_, "player", 0.2, 0.2);
+        manage_sprite(sprite_manager_, *resource_manager_, "heart", 0.1, 0.1);
+        manage_sprite(sprite_manager_, *resource_manager_, "energy", 0.1, 0.1);
+        manage_sprite(sprite_manager_, *resource_manager_, "grass", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "dirt", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "rock", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "root", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "water1", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "water2", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "player", tile_size, tile_size);
 
         using std::placeholders::_1;
         using std::placeholders::_2;
-        the_game_.reset(new the_game(std::bind(&game_screen::on_action, std::ref(*this), _1, _2)));
+        the_game_.reset(new the_game(std::bind(&game_screen::on_did, std::ref(*this), _1, _2)));
         the_game_renderer_.reset(new the_game_renderer(&sprite_manager_, the_game_.get()));
 
         controller_.reset(new player_controller(the_game_.get(), &sprite_manager_));
@@ -305,8 +249,8 @@ public:
     {
         controller_->update(dt);
         game_view_.setCenter(
-            controller_->get_location().x + 0.2 / 2,
-            controller_->get_location().y + 0.2 / 2);
+            controller_->get_location().x + tile_size / 2,
+            controller_->get_location().y + tile_size / 2);
         the_game_renderer_->update(dt);
     }
 
@@ -316,15 +260,28 @@ public:
         the_game_renderer_->render(win_);
         controller_->render(win_);
         win_->setView(hud_view_);
-        // Draw HUD here.
+
+        auto vitals = the_game_->get_player().get_vitals();
+        for (ssize_t i = 0; i < vitals.hearts; ++i)
+        {
+            sf::Transform trans;
+            trans.translate(0.1 * i, 0);
+            win_->draw(sprite_manager_.acquire<sf::RectangleShape>("heart"), trans);
+        }
+        auto atts = the_game_->get_player().get_attributes();
+        for (ssize_t i = 0; i < atts.energy; ++i)
+        {
+            sf::Transform trans;
+            trans.translate(0.1 * i, 0.1);
+            win_->draw(sprite_manager_.acquire<sf::RectangleShape>("energy"), trans);
+        }
     }
 
-    virtual void on_action(entity *src, entity::action act)
+    virtual void on_did(entity *src, entity::did did)
     {
-        (void)act;
         if (src == &the_game_->get_player())
         {
-            controller_->player_moved();
+            controller_->player_did(did);
         }
         else
         {
