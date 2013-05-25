@@ -6,53 +6,22 @@
 #include <map>
 #include <vector>
 
+#include <random.hpp>
 #include <region.hpp>
 #include <entity.hpp>
 #include <plants.hpp>
+#include <player.hpp>
 
-struct attributes
+struct level_settings
 {
-    ssize_t energy;
-    ssize_t max_energy;
-    ssize_t damage;
-    double chance_to_hit;
+    ssize_t number_of_roots;
+    double chance_to_be_good;
+    double chance_to_be_neutral;
+    double chance_to_be_evil;
 };
 
-class player : public entity, private boost::noncopyable
-{
-public:
-    enum action
-    {
-        act_none,
-        act_move,
-    };
-
-    player(region *reg, plant_manager *pm) :
-        entity(reg), plant_manager_(pm)
-    { }
-    virtual ~player() { }
-
-    virtual bool move_by(ssize_t dx, ssize_t dy)
-    {
-        return move_to(coord_.x + dx, coord_.y + dy);
-    }
-
-    virtual bool move_to(ssize_t x, ssize_t y)
-    {
-        if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_dirt)
-        {
-            coord_ = {x, y};
-            return true;
-        }
-        return false;
-    }
-
-    virtual const attributes &get_attributes() const { return attributes_; }
-    virtual attributes &get_attributes() { return attributes_; }
-
-protected:
-    plant_manager *plant_manager_;
-    attributes attributes_;
+static constexpr level_settings settings[] = {
+    {5, 0.8, 0.0, 0.1},
 };
 
 class the_game : private boost::noncopyable
@@ -62,11 +31,17 @@ public:
         on_action_(on_action)
     {
         the_region_.reset(new region());
-        the_region_->generate(50, 50);
         plant_manager_.reset(new plant_manager());
         the_player_.reset(new player(the_region_.get(), plant_manager_.get()));
+        level_ = 0;
+        reset();
+    }
+
+    void reset()
+    {
+        the_region_->generate(50, 50);
         auto loc = the_region_->get_random_empty_location();
-        the_player_->move_to(std::get<0>(loc), std::get<1>(loc));
+        the_player_->move_to(::get_x(loc), ::get_y(loc));
     }
 
     const region &get_region() const { return *the_region_.get(); }
@@ -91,6 +66,9 @@ private:
     std::unique_ptr<plant_manager> plant_manager_;
     std::unique_ptr<player> the_player_;
     std::function<void(entity*src, entity::did did)> on_action_;
+
+    rng rng_;
+    ssize_t level_;
 };
 
 #endif

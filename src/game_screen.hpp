@@ -99,8 +99,8 @@ public:
         player_anim_.get_animation().set_loops(true);
         player_anim_.get_animation().add_frame("player");
         player_anim_.get_animation().start();
-        player_location_ = {the_game_->get_player().get_coord().x * tile_size, the_game_->get_player().get_coord().y * tile_size};
-        player_destination_ = {the_game_->get_player().get_coord().x * tile_size, the_game_->get_player().get_coord().y * tile_size};
+        player_location_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
+        player_destination_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
         player_moving_ = false;
     }
 
@@ -167,8 +167,8 @@ public:
     {
         if (did == entity::did_move)
         {
-            player_destination_ = {the_game_->get_player().get_coord().x * tile_size,
-                the_game_->get_player().get_coord().y * tile_size};
+            player_destination_ = {the_game_->get_player().get_x() * tile_size,
+                the_game_->get_player().get_y() * tile_size};
             player_delta_ = player_destination_ - player_location_;
             player_moving_ = true;
             player_timer_ = 0.0;

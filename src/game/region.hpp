@@ -10,6 +10,18 @@
 
 #include <drunkard.h>
 
+template <typename... Args>
+inline auto get_x(Args&&... args) -> decltype(std::get<0>(std::forward<Args>(args)...))
+{
+    return std::get<0>(std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline auto get_y(Args&&... args) -> decltype(std::get<1>(std::forward<Args>(args)...))
+{
+    return std::get<1>(std::forward<Args>(args)...);
+}
+
 enum tile
 {
     t_water,
