@@ -6,6 +6,7 @@
 
 #include <entity.hpp>
 #include <plants.hpp>
+#include <random.hpp>
 
 struct attributes
 {
@@ -22,10 +23,14 @@ public:
     {
         act_none,
         act_move,
+        act_special1,
+        act_special2,
+        act_special3,
+        act_item
     };
 
-    player(region *reg, plant_manager *pm) :
-        entity(reg), plant_manager_(pm)
+    player(region *reg, rng *r, plant_manager *pm) :
+        entity(reg, r), plant_manager_(pm)
     {
         attributes_ = {3, 3, 2, 0.66};
     }

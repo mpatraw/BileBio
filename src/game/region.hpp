@@ -22,6 +22,8 @@ inline auto get_y(Args&&... args) -> decltype(std::get<1>(std::forward<Args>(arg
     return std::get<1>(std::forward<Args>(args)...);
 }
 
+using vec2 = std::tuple<ssize_t, ssize_t>;
+
 enum tile
 {
     t_water,
@@ -89,16 +91,17 @@ public:
         }
     }
 
-    std::tuple<size_t, size_t> get_random_empty_location()
+    vec2 get_random_empty_location()
     {
         unsigned x, y;
         drunkard_random_opened(drunk_, &x, &y);
-        return std::make_tuple<size_t, size_t>(x, y);
+        return vec2(x, y);
     }
 
     size_t get_width() const { return width_; }
     size_t get_height() const { return height_; }
 
+    bool walkable(ssize_t x, ssize_t y) const { return tile_at(x, y) >= t_dirt; }
     bool in_bounds(ssize_t x, ssize_t y) const
     { return x >= 0 && x < (ssize_t)width_ && y >= 0 && y < (ssize_t)height_; }
     const tile &tile_at(ssize_t x, ssize_t y) const { return tiles_[y * width_ + x]; }

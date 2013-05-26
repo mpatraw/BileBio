@@ -104,10 +104,28 @@ deadly flowers.
   * Yellow fruit (drops energy)
 
 Only roots and vines grow more roots and vines. A growth process is typically 3
-turns, and a plant can only grow 1 thing at a time. Vines grow *towards* the
+turns, and a plant can only grow 1+ thing at a time. Vines grow *towards* the
 player if the player is in range, usually as far away as possible to *trap* the player.
 
 A vine has a chance to grow into a fruit or flower, instead of expanding.
+
+A growing plant is unidentifiably but still attackable (all growing plants look the
+same).
+
+Steps:
+1a. If growing
+  1. Increment growth period for all plants growing
+  2. If done growing
+    1. Add plants on growth list to plant list
+    2. Set to not growing
+1b. If not growing
+  1. Find N plants on the outer edges of the whole plant group.
+  2a. Check if upgrade, or grow
+    1. Replace and set new plant to grow
+  2b. If grow instead
+    1. Find target to grow, if none, pick random area unnoccupied.
+  3. Add to growing list.
+2. Update all plants to do something to target. (attack)
 
 ## TODO
 
