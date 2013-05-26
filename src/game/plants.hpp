@@ -216,7 +216,8 @@ public:
     {
         growth_time_ = 3;
         growth_timer_ = 0;
-        growth_count_ = 1;
+        growth_count_ = 3;
+        growth_range_ = 5;
     }
     virtual ~root() { }
 
@@ -250,7 +251,6 @@ public:
                 {
                     if (empty_neighbors(p).size() > 0)
                     {
-                        std::printf("here\n");
                         edges.push_back(p);
                     }
                 }
@@ -258,8 +258,15 @@ public:
                 ssize_t count = 0;
                 for (auto &p : edges)
                 {
-                    if (count >= growth_count_)
+                    if (++count > growth_count_)
                         break;
+
+                    auto empty = empty_neighbors(p);
+                    auto np = std::make_shared<leaf>(region_, rng_, plant::p_growing, this);
+                    auto r = rng_->get_range(0, empty.size() - 1);
+                    growing_list_.push_back(np);
+                    leaf_list_.push_back(np);
+                    plant_manager_->add_plant_later(np, ::get_x(empty[r]), ::get_y(empty[r]));
 
                     // if (grow)
                     // replace
@@ -273,8 +280,10 @@ public:
                 auto empty = empty_neighbors(plant_manager_->get_shared(this));
                 if (empty.size() > 0)
                 {
-                    auto np = std::make_shared<root>(region_, rng_, plant_manager_);
+                    auto np = std::make_shared<leaf>(region_, rng_, plant::p_growing, this);
                     auto r = rng_->get_range(0, empty.size() - 1);
+                    growing_list_.push_back(np);
+                    leaf_list_.push_back(np);
                     plant_manager_->add_plant_later(np, ::get_x(empty[r]), ::get_y(empty[r]));
                 }
             }
@@ -294,6 +303,7 @@ protected:
     ssize_t growth_time_;
     ssize_t growth_timer_;
     ssize_t growth_count_;
+    ssize_t growth_range_;
 
 private:
     std::vector<vec2> empty_neighbors(std::shared_ptr<plant> p)

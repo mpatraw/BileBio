@@ -14,7 +14,7 @@
 #include <utils/resource_manager.hpp>
 #include <ui/simple_ui.hpp>
 
-static constexpr double tiles_per_screen = 5.0;
+static constexpr double tiles_per_screen = 10.0;
 static constexpr double tile_size = 1.0 / tiles_per_screen;
 
 class the_game_renderer
@@ -77,7 +77,25 @@ public:
                 // Render plants.
                 auto pl = the_game_->get_plant_at(x, y);
                 if (pl)
-                    win->draw(sprite_manager_->acquire<sf::RectangleShape>("root"), t);
+                {
+                    std::string sprite = "";
+                    switch (pl->get_type())
+                    {
+                    case plant::p_root:
+                        sprite = "root";
+                        break;
+                    case plant::p_vine:
+                        sprite = "vine";
+                        break;
+                    case plant::p_growing:
+                        sprite = "growing";
+                        break;
+                    default:
+                        sprite = "tree";
+                        break;
+                    }
+                    win->draw(sprite_manager_->acquire<sf::RectangleShape>(sprite), t);
+                }
             }
         }
     }
@@ -136,7 +154,8 @@ public:
             if (dx != 0 || dy != 0)
                 the_game_->player_act(dx, dy, player::act_move);
         }
-        else
+
+        if (player_moving_)
         {
             player_timer_ += dt;
             if (player_timer_ >= 0.5)
@@ -212,6 +231,8 @@ public:
         manage_sprite(sprite_manager_, *resource_manager_, "dirt", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "rock", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "root", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "vine", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "growing", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "water1", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "water2", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player", tile_size, tile_size);

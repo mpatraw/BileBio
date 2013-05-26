@@ -51,9 +51,12 @@ public:
     {
         if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_dirt)
         {
-            x_ = x;
-            y_ = y;
-            return true;
+            if (!plant_manager_->get_plant(x, y))
+            {
+                x_ = x;
+                y_ = y;
+                return true;
+            }
         }
         return false;
     }

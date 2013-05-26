@@ -60,13 +60,14 @@ int main()
     auto vm = sf::VideoMode(320, 480, sf::Style::Titlebar | sf::Style::Close);
     sf::RenderWindow window(vm, "BileBio");
     window.setVerticalSyncEnabled(true);
-    window.setFramerateLimit(30);
+    //window.setFramerateLimit(60);
 
     resource_manager rm;
 
     load_resource<sf::Font>(rm, "Nouveau_IBM", "resources/Nouveau_IBM.ttf");
     load_resource<sf::Font>(rm, "Pokemon GB", "resources/Pokemon GB.ttf");
     load_resource<sf::Texture>(rm, "title", "resources/title.png");
+    load_resource<sf::Texture>(rm, "growing", "resources/growing.png");
     load_resource<sf::Texture>(rm, "vine", "resources/vine.png");
     load_resource<sf::Texture>(rm, "frame", "resources/frame.png");
     load_resource<sf::Texture>(rm, "heart", "resources/heart.png");
