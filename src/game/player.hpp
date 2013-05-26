@@ -49,7 +49,7 @@ public:
 
     virtual bool move_to(ssize_t x, ssize_t y)
     {
-        if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_dirt)
+        if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_floor)
         {
             if (!plant_manager_->get_plant(x, y))
             {

@@ -14,7 +14,7 @@
 #include <utils/resource_manager.hpp>
 #include <ui/simple_ui.hpp>
 
-static constexpr double tiles_per_screen = 10.0;
+static constexpr double tiles_per_screen = 7.0;
 static constexpr double tile_size = 1.0 / tiles_per_screen;
 
 class the_game_renderer
@@ -23,17 +23,12 @@ public:
     the_game_renderer(const resource_manager *sm, const the_game *tg) :
         sprite_manager_(sm), the_game_(tg)
     {
-        water_anim_.set_duration(1.0);
-        water_anim_.set_loops(true);
-        water_anim_.add_frame("water1");
-        water_anim_.add_frame("water2");
-        water_anim_.start();
     }
     virtual ~the_game_renderer() { }
 
     virtual void update(double dt)
     {
-        water_anim_.update(dt);
+        (void)dt;
     }
 
     virtual void render(sf::RenderWindow *win, const sf::Transform &trans=sf::Transform()) const
@@ -47,27 +42,11 @@ public:
                 sf::Transform t;
                 t.translate(x * tile_size, y * tile_size);
                 t.combine(trans);
-                win->draw(sprite_manager_->acquire<sf::RectangleShape>("grass"), t);
+                win->draw(sprite_manager_->acquire<sf::RectangleShape>("floor"), t);
                 switch (reg.tile_at(x, y))
                 {
-                    case t_water:
-                        win->draw(sprite_manager_->acquire<sf::RectangleShape>(water_anim_.get_texture()), t);
-                        break;
-
-                    case t_tree:
-                        win->draw(sprite_manager_->acquire<sf::RectangleShape>("tree"), t);
-                        break;
-
-                    case t_rock:
-                        win->draw(sprite_manager_->acquire<sf::RectangleShape>("rock"), t);
-                        break;
-
-                    case t_dirt:
-                        win->draw(sprite_manager_->acquire<sf::RectangleShape>("dirt"), t);
-                        break;
-
-                    case t_grass:
-                        win->draw(sprite_manager_->acquire<sf::RectangleShape>("grass"), t);
+                    case t_rocks:
+                        win->draw(sprite_manager_->acquire<sf::RectangleShape>("rocks"), t);
                         break;
 
                     default:
@@ -102,8 +81,6 @@ public:
 protected:
     const resource_manager *sprite_manager_;
     const the_game *the_game_;
-
-    animation water_anim_;
 };
 
 class player_controller
@@ -227,15 +204,14 @@ public:
 
         manage_sprite(sprite_manager_, *resource_manager_, "heart", 0.1, 0.1);
         manage_sprite(sprite_manager_, *resource_manager_, "energy", 0.1, 0.1);
-        manage_sprite(sprite_manager_, *resource_manager_, "grass", tile_size, tile_size);
-        manage_sprite(sprite_manager_, *resource_manager_, "dirt", tile_size, tile_size);
-        manage_sprite(sprite_manager_, *resource_manager_, "rock", tile_size, tile_size);
+
         manage_sprite(sprite_manager_, *resource_manager_, "root", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "vine", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "growing", tile_size, tile_size);
-        manage_sprite(sprite_manager_, *resource_manager_, "water1", tile_size, tile_size);
-        manage_sprite(sprite_manager_, *resource_manager_, "water2", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player", tile_size, tile_size);
+
+        manage_sprite(sprite_manager_, *resource_manager_, "floor", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "rocks", tile_size, tile_size);
 
         using std::placeholders::_1;
         using std::placeholders::_2;

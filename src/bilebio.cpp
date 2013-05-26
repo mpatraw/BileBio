@@ -67,19 +67,18 @@ int main()
     load_resource<sf::Font>(rm, "Nouveau_IBM", "resources/Nouveau_IBM.ttf");
     load_resource<sf::Font>(rm, "Pokemon GB", "resources/Pokemon GB.ttf");
     load_resource<sf::Texture>(rm, "title", "resources/title.png");
-    load_resource<sf::Texture>(rm, "growing", "resources/growing.png");
-    load_resource<sf::Texture>(rm, "vine", "resources/vine.png");
     load_resource<sf::Texture>(rm, "frame", "resources/frame.png");
+
     load_resource<sf::Texture>(rm, "heart", "resources/heart.png");
     load_resource<sf::Texture>(rm, "energy", "resources/energy.png");
-    load_resource<sf::Texture>(rm, "dirt", "resources/dirt.png");
-    load_resource<sf::Texture>(rm, "rock", "resources/rock.png");
-    load_resource<sf::Texture>(rm, "grass", "resources/grass.png");
-    load_resource<sf::Texture>(rm, "tree", "resources/tree.png");
-    load_resource<sf::Texture>(rm, "root", "resources/root.png");
+
     load_resource<sf::Texture>(rm, "player", "resources/player.png");
-    load_resource<sf::Texture>(rm, "water1", "resources/water.png", sf::IntRect(0, 0, 16, 16));
-    load_resource<sf::Texture>(rm, "water2", "resources/water.png", sf::IntRect(16, 0, 16, 16));
+    load_resource<sf::Texture>(rm, "root", "resources/root.png");
+    load_resource<sf::Texture>(rm, "growing", "resources/growing.png");
+    load_resource<sf::Texture>(rm, "vine", "resources/vine.png");
+
+    load_resource<sf::Texture>(rm, "floor", "resources/jungle_floor.png");
+    load_resource<sf::Texture>(rm, "rocks", "resources/rocks.png", sf::IntRect(0, 0, 64, 64));
 
 
     screen_manager sm;

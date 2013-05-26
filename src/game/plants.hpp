@@ -261,13 +261,26 @@ public:
                     if (++count > growth_count_)
                         break;
 
-                    auto empty = empty_neighbors(p);
-                    auto np = std::make_shared<leaf>(region_, rng_, plant::p_growing, this);
-                    auto r = rng_->get_range(0, empty.size() - 1);
-                    growing_list_.push_back(np);
-                    leaf_list_.push_back(np);
-                    plant_manager_->add_plant_later(np, ::get_x(empty[r]), ::get_y(empty[r]));
+                    // 10% to transform.
+                    if (rng_->get_uniform() < 0.1)
+                    {
+                    }
+                    else
+                    {
+                        if (target_)
+                        {
 
+                        }
+                        else
+                        {
+                            auto empty = empty_neighbors(p);
+                            auto r = rng_->get_range(0, empty.size() - 1);
+                            auto np = std::make_shared<leaf>(region_, rng_, plant::p_growing, this);
+                            growing_list_.push_back(np);
+                            leaf_list_.push_back(np);
+                            plant_manager_->add_plant_later(np, ::get_x(empty[r]), ::get_y(empty[r]));
+                        }
+                    }
                     // if (grow)
                     // replace
                     // else (upgrade)
@@ -306,28 +319,37 @@ protected:
     ssize_t growth_range_;
 
 private:
-    std::vector<vec2> empty_neighbors(std::shared_ptr<plant> p)
+    std::vector<vec2> empty_neighbors(std::shared_ptr<plant> p, ssize_t range=1)
     {
-        static ssize_t delta[8][2] = {
-            {-1, -1},
-            {-1,  0},
-            {-1,  1},
-            { 0, -1},
-            { 0,  1},
-            { 1, -1},
-            { 1,  0},
-            { 1,  1}
-        };
         std::vector<vec2> neighbors;
-        vec2 c;
-        if (plant_manager_->find_plant(p, c))
+        vec2 around;
+        if (plant_manager_->find_plant(p, around))
         {
-            for (auto &i : delta)
+            for (ssize_t dx = -range; dx <= range; ++dx)
             {
-                vec2 d = vec2(::get_x(c) + i[0], ::get_y(c) + i[1]);
-                if (!plant_manager_->get_plant(::get_x(d), ::get_y(d)) &&
-                    region_->walkable(::get_x(d), ::get_y(d)))
-                    neighbors.push_back(d);
+                for (ssize_t dy = -range; dy <= range; ++dy)
+                {
+                    vec2 v = vec2(::get_x(around) + dx, ::get_y(around) + dy);
+                    if (!plant_manager_->get_plant(::get_x(v), ::get_y(v)) &&
+                        region_->walkable(::get_x(v), ::get_y(v)))
+                        neighbors.push_back(v);
+                }
+            }
+        }
+        return neighbors;
+    }
+
+    std::vector<vec2> empty_neighbors(vec2 around, ssize_t range=1)
+    {
+        std::vector<vec2> neighbors;
+        for (ssize_t dx = -range; dx <= range; ++dx)
+        {
+            for (ssize_t dy = -range; dy <= range; ++dy)
+            {
+                vec2 v = vec2(::get_x(around) + dx, ::get_y(around) + dy);
+                if (!plant_manager_->get_plant(::get_x(v), ::get_y(v)) &&
+                    region_->walkable(::get_x(v), ::get_y(v)))
+                    neighbors.push_back(v);
             }
         }
         return neighbors;
