@@ -204,6 +204,8 @@ public:
 
         manage_sprite(sprite_manager_, *resource_manager_, "heart", 0.1, 0.1);
         manage_sprite(sprite_manager_, *resource_manager_, "energy", 0.1, 0.1);
+        manage_sprite(sprite_manager_, *resource_manager_, "noheart", 0.1, 0.1);
+        manage_sprite(sprite_manager_, *resource_manager_, "noenergy", 0.1, 0.1);
 
         manage_sprite(sprite_manager_, *resource_manager_, "root", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "vine", tile_size, tile_size);
@@ -259,18 +261,24 @@ public:
         win_->setView(hud_view_);
 
         auto vitals = the_game_->get_player().get_vitals();
-        for (ssize_t i = 0; i < vitals.hearts; ++i)
+        for (ssize_t i = 0; i < vitals.max_hearts; ++i)
         {
             sf::Transform trans;
             trans.translate(0.1 * i, 0);
-            win_->draw(sprite_manager_.acquire<sf::RectangleShape>("heart"), trans);
+            if (i > vitals.max_hearts - vitals.hearts)
+                win_->draw(sprite_manager_.acquire<sf::RectangleShape>("noheart"), trans);
+            else
+                win_->draw(sprite_manager_.acquire<sf::RectangleShape>("heart"), trans);
         }
         auto atts = the_game_->get_player().get_attributes();
-        for (ssize_t i = 0; i < atts.energy; ++i)
+        for (ssize_t i = 0; i < atts.max_energy; ++i)
         {
             sf::Transform trans;
             trans.translate(0.1 * i, 0.1);
-            win_->draw(sprite_manager_.acquire<sf::RectangleShape>("energy"), trans);
+            if (i > atts.max_energy - atts.energy)
+                win_->draw(sprite_manager_.acquire<sf::RectangleShape>("noenergy"), trans);
+            else
+                win_->draw(sprite_manager_.acquire<sf::RectangleShape>("energy"), trans);
         }
     }
 

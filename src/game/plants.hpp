@@ -216,7 +216,7 @@ public:
     {
         growth_time_ = 3;
         growth_timer_ = 0;
-        growth_count_ = 3;
+        growth_count_ = 1;
         growth_range_ = 5;
     }
     virtual ~root() { }

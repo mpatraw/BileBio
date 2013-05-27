@@ -71,6 +71,8 @@ int main()
 
     load_resource<sf::Texture>(rm, "heart", "resources/heart.png");
     load_resource<sf::Texture>(rm, "energy", "resources/energy.png");
+    load_resource<sf::Texture>(rm, "noheart", "resources/noheart.png");
+    load_resource<sf::Texture>(rm, "noenergy", "resources/noenergy.png");
 
     load_resource<sf::Texture>(rm, "player", "resources/player.png");
     load_resource<sf::Texture>(rm, "root", "resources/root.png");

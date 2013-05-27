@@ -24,6 +24,8 @@ static constexpr level_settings settings[] = {
     {5, 0.8, 0.0, 0.1},
 };
 
+static constexpr ssize_t max_levels = 1;
+
 class the_game : private boost::noncopyable
 {
 public:
@@ -39,10 +41,16 @@ public:
 
     void reset()
     {
-        the_region_->generate(50, 50);
+        the_region_->generate(20, 20);
         auto loc = the_region_->get_random_empty_location();
         the_player_->move_to(::get_x(loc), ::get_y(loc));
-        plant_manager_->add_plant(std::shared_ptr<plant>(new root(the_region_.get(), &rng_, plant_manager_.get())), ::get_x(loc), ::get_y(loc));
+
+        auto set = settings[level_];
+        for (ssize_t i = 0; i < set.number_of_roots; ++i)
+        {
+            auto v = the_region_->get_random_empty_location();
+            plant_manager_->add_plant(std::shared_ptr<plant>(new root(the_region_.get(), &rng_, plant_manager_.get())), ::get_x(v), ::get_y(v));
+        }
     }
 
     const region &get_region() const { return *the_region_.get(); }

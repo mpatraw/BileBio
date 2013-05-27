@@ -32,7 +32,8 @@ public:
     player(region *reg, rng *r, plant_manager *pm) :
         entity(reg, r), plant_manager_(pm)
     {
-        attributes_ = {3, 3, 2, 0.66};
+        vitals_ = {2, 3, 1, 0.5};
+        attributes_ = {2, 3, 2, 0.66};
     }
     virtual ~player() { }
 
