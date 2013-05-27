@@ -170,7 +170,7 @@ public:
     leaf(region *reg, rng *r, plant::type type, plant *parent) :
         plant(reg, r, type), parent_(parent)
     {
-
+        grow_into(type);
     }
     virtual ~leaf() { }
 
@@ -184,6 +184,23 @@ public:
     virtual void grow_into(plant::type type)
     {
         type_ = type;
+        switch (type_)
+        {
+        case plant::p_growing:
+            break;
+
+        case plant::p_vine:
+            break;
+
+        case plant::p_flower:
+            break;
+
+        case plant::p_fruit:
+            break;
+
+        default:
+            break;
+        }
     }
 
 protected:
