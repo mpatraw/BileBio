@@ -32,7 +32,7 @@ public:
     player(region *reg, rng *r, plant_manager *pm) :
         entity(reg, r), plant_manager_(pm)
     {
-        vitals_ = {2, 3, 1, 0.5};
+        vitals_ = {2, 3, 2, 0.66};
         attributes_ = {2, 3, 2, 0.66};
     }
     virtual ~player() { }
@@ -43,23 +43,52 @@ public:
     virtual const ssize_t &get_y() const { return y_; }
     virtual ssize_t &get_y() { return y_; }
 
-    virtual bool move_by(ssize_t dx, ssize_t dy)
+    virtual void perform(ssize_t dx, ssize_t dy, player::action act, std::function<void(entity *, entity::did, entity *targ)> on_did)
     {
-        return move_to(x_ + dx, y_ + dy);
+        perform_to(x_ + dx, y_ + dy, act, on_did);
     }
 
-    virtual bool move_to(ssize_t x, ssize_t y)
+    virtual void perform_to(ssize_t x, ssize_t y, player::action act, std::function<void(entity *, entity::did, entity *targ)> on_did)
     {
-        if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_floor)
+        switch (act)
         {
-            if (!plant_manager_->get_plant(x, y))
+        case player::act_move:
+            if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_floor)
             {
-                x_ = x;
-                y_ = y;
-                return true;
+                auto p = plant_manager_->get_plant(x, y);
+                if (!p)
+                {
+                    x_ = x;
+                    y_ = y;
+                    if (on_did != nullptr)
+                        on_did(this, entity::did_move, nullptr);
+                }
+                else
+                {
+                    if (rng_->get_uniform() < vitals_.to_hit)
+                    {
+                        std::printf("Dealt %d damage\n", vitals_.damage);
+                        p->take_damage(vitals_.damage);
+                        if (on_did != nullptr)
+                            on_did(this, entity::did_attack, p.get());
+                        if (p->is_dead())
+                            plant_manager_->remove_plant(p);
+                    }
+                    else
+                    {
+                        std::printf("Missed.\n");
+                        if (on_did != nullptr)
+                            on_did(this, entity::did_miss, p.get());
+                    }
+                }
             }
+            break;
+
+        default:
+            break;
         }
-        return false;
+        if (on_did != nullptr)
+            on_did(this, entity::did_attack, nullptr);
     }
 
     virtual const attributes &get_attributes() const { return attributes_; }

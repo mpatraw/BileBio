@@ -17,11 +17,115 @@
 static constexpr double tiles_per_screen = 7.0;
 static constexpr double tile_size = 1.0 / tiles_per_screen;
 
+class player_controller
+{
+public:
+    player_controller(the_game *tg, resource_manager *sm) :
+        the_game_(tg), sprite_manager_(sm)
+    {
+        player_anim_.set_state("walking");
+        player_anim_.get_animation().set_duration(0.5);
+        player_anim_.get_animation().set_loops(true);
+        player_anim_.get_animation().add_frame("player");
+        player_anim_.get_animation().start();
+        player_location_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
+        player_destination_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
+        player_moving_ = false;
+    }
+
+    virtual ~player_controller() { }
+
+    const sf::Vector2f &get_location() const { return player_location_; }
+    const state_animator &get_animator() const { return player_anim_; }
+
+    virtual void update(double dt)
+    {
+        if (!player_moving_)
+        {
+            ssize_t dx = 0, dy = 0;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+            {
+                dx = 0;
+                dy = -1;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+            {
+                dx = -1;
+                dy = 0;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+            {
+                dx = 0;
+                dy = 1;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+            {
+                dx = 1;
+                dy = 0;
+            }
+            if (dx != 0 || dy != 0)
+                the_game_->player_act(dx, dy, player::act_move);
+        }
+
+        if (player_moving_)
+        {
+            player_timer_ += dt;
+            if (player_timer_ >= 0.5)
+            {
+                player_location_ = player_destination_;
+                player_moving_ = false;
+                the_game_->rest_act();
+            }
+            else
+            {
+                player_location_ = sf::Vector2f(
+                    player_location_.x + player_delta_.x * (dt / 0.5),
+                    player_location_.y + player_delta_.y * (dt / 0.5));
+            }
+        }
+
+        player_anim_.get_animation().update(dt);
+    }
+
+    virtual void player_did(entity::did did, entity *targ)
+    {
+        if (did == entity::did_move)
+        {
+            player_destination_ = {the_game_->get_player().get_x() * tile_size,
+                the_game_->get_player().get_y() * tile_size};
+            player_delta_ = player_destination_ - player_location_;
+            player_moving_ = true;
+            player_timer_ = 0.0;
+        }
+        else if (did == entity::did_attack || did == entity::did_miss)
+        {
+            std::printf("%p\n", targ);
+            player_destination_ = {the_game_->get_player().get_x() * tile_size,
+                the_game_->get_player().get_y() * tile_size};
+            player_delta_ = player_destination_ - player_location_;
+            player_moving_ = true;
+            player_timer_ = 0.0;
+        }
+    }
+
+protected:
+    the_game *the_game_;
+    resource_manager *sprite_manager_;
+    state_animator player_anim_;
+
+    // Smooth scrolling.
+    bool player_moving_;
+    double player_timer_;
+    sf::Vector2f player_location_;
+    sf::Vector2f player_destination_;
+    sf::Vector2f player_delta_;
+};
+
 class the_game_renderer
 {
 public:
-    the_game_renderer(const resource_manager *sm, const the_game *tg) :
-        sprite_manager_(sm), the_game_(tg)
+    the_game_renderer(const resource_manager *sm, const the_game *tg, const player_controller *controller) :
+        sprite_manager_(sm), the_game_(tg), controller_(controller)
     {
     }
     virtual ~the_game_renderer() { }
@@ -77,111 +181,16 @@ public:
                 }
             }
         }
+
+        sf::Transform t;
+        t.translate(controller_->get_location());
+        t.combine(trans);
+        win->draw(sprite_manager_->acquire<sf::RectangleShape>(controller_->get_animator().get_animation().get_texture()), t);
     }
 protected:
     const resource_manager *sprite_manager_;
     const the_game *the_game_;
-};
-
-class player_controller
-{
-public:
-    player_controller(the_game *tg, resource_manager *sm) :
-        the_game_(tg), sprite_manager_(sm)
-    {
-        player_anim_.set_state("walking");
-        player_anim_.get_animation().set_duration(0.5);
-        player_anim_.get_animation().set_loops(true);
-        player_anim_.get_animation().add_frame("player");
-        player_anim_.get_animation().start();
-        player_location_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
-        player_destination_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
-        player_moving_ = false;
-    }
-
-    virtual ~player_controller() { }
-
-    const sf::Vector2f &get_location() const { return player_location_; }
-
-    virtual void update(double dt)
-    {
-        if (!player_moving_)
-        {
-            ssize_t dx = 0, dy = 0;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-            {
-                dx = 0;
-                dy = -1;
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-            {
-                dx = -1;
-                dy = 0;
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-            {
-                dx = 0;
-                dy = 1;
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-            {
-                dx = 1;
-                dy = 0;
-            }
-            if (dx != 0 || dy != 0)
-                the_game_->player_act(dx, dy, player::act_move);
-        }
-
-        if (player_moving_)
-        {
-            player_timer_ += dt;
-            if (player_timer_ >= 0.5)
-            {
-                player_location_ = player_destination_;
-                player_moving_ = false;
-                the_game_->rest_act();
-            }
-            else
-            {
-                player_location_ = sf::Vector2f(
-                    player_location_.x + player_delta_.x * (dt / 0.5),
-                    player_location_.y + player_delta_.y * (dt / 0.5));
-            }
-        }
-
-        player_anim_.get_animation().update(dt);
-    }
-
-    virtual void render(sf::RenderWindow *win)
-    {
-        sf::Transform trans;
-        trans.translate(player_location_);
-        win->draw(sprite_manager_->acquire<sf::RectangleShape>(player_anim_.get_animation().get_texture()), trans);
-    }
-
-    virtual void player_did(entity::did did)
-    {
-        if (did == entity::did_move)
-        {
-            player_destination_ = {the_game_->get_player().get_x() * tile_size,
-                the_game_->get_player().get_y() * tile_size};
-            player_delta_ = player_destination_ - player_location_;
-            player_moving_ = true;
-            player_timer_ = 0.0;
-        }
-    }
-
-protected:
-    the_game *the_game_;
-    resource_manager *sprite_manager_;
-    state_animator player_anim_;
-
-    // Smooth scrolling.
-    bool player_moving_;
-    double player_timer_;
-    sf::Vector2f player_location_;
-    sf::Vector2f player_destination_;
-    sf::Vector2f player_delta_;
+    const player_controller *controller_;
 };
 
 static inline void manage_sprite(resource_manager &sm, const resource_manager &rm, std::string key, double width, double height)
@@ -217,13 +226,15 @@ public:
 
         using std::placeholders::_1;
         using std::placeholders::_2;
-        the_game_.reset(new the_game(std::bind(&game_screen::on_did, std::ref(*this), _1, _2)));
-        the_game_renderer_.reset(new the_game_renderer(&sprite_manager_, the_game_.get()));
-
+        using std::placeholders::_3;
+        the_game_.reset(new the_game(std::bind(&game_screen::on_did, std::ref(*this), _1, _2, _3)));
         controller_.reset(new player_controller(the_game_.get(), &sprite_manager_));
+        the_game_renderer_.reset(new the_game_renderer(&sprite_manager_, the_game_.get(), controller_.get()));
     }
 
     virtual ~game_screen() { }
+
+    const player_controller &get_player_controller() const { return *controller_.get(); }
 
     virtual bool stops_events() const { return true; }
     virtual bool stops_updating() const { return true; }
@@ -257,7 +268,6 @@ public:
     {
         win_->setView(game_view_);
         the_game_renderer_->render(win_);
-        controller_->render(win_);
         win_->setView(hud_view_);
 
         auto vitals = the_game_->get_player().get_vitals();
@@ -282,11 +292,11 @@ public:
         }
     }
 
-    virtual void on_did(entity *src, entity::did did)
+    virtual void on_did(entity *src, entity::did did, entity *targ)
     {
         if (src == &the_game_->get_player())
         {
-            controller_->player_did(did);
+            controller_->player_did(did, targ);
         }
         else
         {

@@ -14,6 +14,9 @@ struct vitals
     double to_hit;
 };
 
+using shared_entity = std::shared_ptr<class entity>;
+using weak_entity = std::weak_ptr<class entity>;
+
 class entity : private boost::noncopyable
 {
 public:
@@ -23,6 +26,7 @@ public:
         did_move,
         did_grow,
         did_attack,
+        did_miss
     };
 
     entity(region *reg, rng *r) :

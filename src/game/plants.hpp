@@ -11,6 +11,9 @@
 #include <entity.hpp>
 #include <random.hpp>
 
+using shared_plant = std::shared_ptr<class plant>;
+using weak_plant = std::weak_ptr<class plant>;
+
 class plant : public entity, private boost::noncopyable
 {
 public:
@@ -23,30 +26,65 @@ public:
         p_fruit,
     };
 
-    plant(region *reg, rng *r, plant::type type) :
-        entity(reg, r), type_(type)
+    plant(region *reg, rng *r, plant::type type, plant *parent=nullptr) :
+        entity(reg, r), type_(type), parent_(parent)
     {
     }
-    virtual ~plant() { }
+    virtual ~plant()
+    {
+        std::printf("plant killed\n");
+    }
 
     virtual plant::type get_type() const { return type_; }
 
-    virtual void act(std::function<void(entity *, entity::did)> on_did) = 0;
+    virtual void act(std::function<void(entity *, entity::did, entity *targ)> on_did)
+    {
+        (void)on_did;
+    }
+
+    virtual const plant *get_parent() const { return parent_; }
+
+    virtual void grow_into(plant::type type)
+    {
+        type_ = type;
+        switch (type_)
+        {
+        case plant::p_growing:
+            vitals_ = {1, 1, 0, 0.0};
+            break;
+
+        case plant::p_vine:
+            vitals_ = {3, 3, 0, 0.0};
+            break;
+
+        case plant::p_flower:
+            vitals_ = {3, 3, 0, 0.0};
+            break;
+
+        case plant::p_fruit:
+            vitals_ = {1, 1, 0, 0.0};
+            break;
+
+        default:
+            break;
+        }
+    }
 
 protected:
     plant::type type_;
+    // Can't be shared. Would impose a circular reference.
+    plant *parent_;
 };
 
 class plant_manager
 {
 public:
-    using plant_ptr = std::shared_ptr<plant>;
-    using plant_ptr_list = std::vector<plant_ptr>;
-    using plant_ptr_map = std::map<vec2, plant_ptr>;
+    using shared_plant_list = std::vector<shared_plant>;
+    using shared_plant_map = std::map<vec2, shared_plant>;
 
     plant_manager() { }
 
-    plant_ptr get_shared(plant *ptr)
+    shared_plant get_shared(const plant *ptr)
     {
         for (auto i = plant_map_.begin(); i != plant_map_.end(); ++i)
         {
@@ -58,7 +96,7 @@ public:
         return nullptr;
     }
 
-    bool find_plant(plant_ptr ptr, vec2 &c)
+    bool find_plant(shared_plant ptr, vec2 &c)
     {
         for (auto i = plant_map_.begin(); i != plant_map_.end(); ++i)
         {
@@ -71,14 +109,14 @@ public:
         return false;
     }
 
-    void remove_plant(plant_ptr ptr)
+    void remove_plant(shared_plant ptr)
     {
         vec2 c;
         if (find_plant(ptr, c))
             remove_plant(::get_x(c), ::get_y(c));
     }
 
-    void add_plant(plant_ptr p, ssize_t x, ssize_t y)
+    void add_plant(shared_plant p, ssize_t x, ssize_t y)
     {
         if (get_plant(x, y))
         {
@@ -88,7 +126,7 @@ public:
         plant_map_[vec2(x, y)] = p;
     }
 
-    void add_plant_later(plant_ptr p, ssize_t x, ssize_t y)
+    void add_plant_later(shared_plant p, ssize_t x, ssize_t y)
     {
         plant_later_.push_back({p, x, y});
     }
@@ -126,7 +164,7 @@ public:
         add_plant(p, ex, ey);
     }
 
-    plant_ptr get_plant(ssize_t x, ssize_t y)
+    shared_plant get_plant(ssize_t x, ssize_t y)
     {
         auto c = vec2(x, y);
         if (plant_map_.find(c) == plant_map_.end())
@@ -135,7 +173,7 @@ public:
             return plant_map_.at(c);
     }
 
-    const plant_ptr get_plant(ssize_t x, ssize_t y) const
+    const shared_plant get_plant(ssize_t x, ssize_t y) const
     {
         auto c = vec2(x, y);
         if (plant_map_.find(c) == plant_map_.end())
@@ -144,67 +182,24 @@ public:
             return plant_map_.at(c);
     }
 
-    plant_ptr_list &get_plant_list() { return plant_list_; }
-    const plant_ptr_list &get_plant_list() const { return plant_list_; }
+    shared_plant_list &get_plant_list() { return plant_list_; }
+    const shared_plant_list &get_plant_list() const { return plant_list_; }
 
 private:
     struct plant_later
     {
-        plant_ptr ptr;
+        shared_plant ptr;
         ssize_t x;
         ssize_t y;
     };
 
     std::vector<plant_later> plant_later_;
-    plant_ptr_list plant_list_;
-    plant_ptr_map plant_map_;
+    shared_plant_list plant_list_;
+    shared_plant_map plant_map_;
 };
 
 struct biomass
 {
-};
-
-class leaf : public plant, private boost::noncopyable
-{
-public:
-    leaf(region *reg, rng *r, plant::type type, plant *parent) :
-        plant(reg, r, type), parent_(parent)
-    {
-        grow_into(type);
-    }
-    virtual ~leaf() { }
-
-    virtual void act(std::function<void(entity *, entity::did)> on_did)
-    {
-        (void)on_did;
-    }
-
-    virtual const plant *get_parent() const { return parent_; }
-
-    virtual void grow_into(plant::type type)
-    {
-        type_ = type;
-        switch (type_)
-        {
-        case plant::p_growing:
-            break;
-
-        case plant::p_vine:
-            break;
-
-        case plant::p_flower:
-            break;
-
-        case plant::p_fruit:
-            break;
-
-        default:
-            break;
-        }
-    }
-
-protected:
-    plant *parent_;
 };
 
 /*
@@ -226,10 +221,10 @@ protected:
 class root : public plant, private boost::noncopyable
 {
 public:
-    using leaf_list = std::vector<std::shared_ptr<leaf>>;
+    using plant_list = std::vector<std::shared_ptr<plant>>;
 
-    root(region *reg, rng *r, plant_manager *pm) :
-        plant(reg, r, plant::p_root), plant_manager_(pm)
+    root(region *reg, rng *r, plant_manager *pm, std::function<vec2()> target=std::function<vec2()>()) :
+        plant(reg, r, plant::p_root), plant_manager_(pm), target_(target)
     {
         growth_time_ = 3;
         growth_timer_ = 0;
@@ -243,7 +238,7 @@ public:
         target_ = target;
     }
 
-    virtual void act(std::function<void(entity *, entity::did)> on_did)
+    virtual void act(std::function<void(entity *, entity::did, entity *targ)> on_did)
     {
         (void)on_did;
         if (growing_list_.size())
@@ -260,11 +255,11 @@ public:
         }
         else
         {
-            if (leaf_list_.size())
+            if (child_list_.size())
             {
-                leaf_list edges;
+                plant_list edges;
 
-                for (auto &p : leaf_list_)
+                for (auto &p : child_list_)
                 {
                     if (empty_neighbors(p).size() > 0)
                     {
@@ -284,17 +279,17 @@ public:
                     }
                     else
                     {
-                        if (target_)
-                        {
-
-                        }
-                        else
+                        //if (target_)
+                        //{
+                        //    vec2 targ = target_();
+                        //}
+                        //else
                         {
                             auto empty = empty_neighbors(p);
                             auto r = rng_->get_range(0, empty.size() - 1);
-                            auto np = std::make_shared<leaf>(region_, rng_, plant::p_growing, this);
+                            auto np = std::make_shared<plant>(region_, rng_, plant::p_growing, this);
                             growing_list_.push_back(np);
-                            leaf_list_.push_back(np);
+                            child_list_.push_back(np);
                             plant_manager_->add_plant_later(np, ::get_x(empty[r]), ::get_y(empty[r]));
                         }
                     }
@@ -310,25 +305,36 @@ public:
                 auto empty = empty_neighbors(plant_manager_->get_shared(this));
                 if (empty.size() > 0)
                 {
-                    auto np = std::make_shared<leaf>(region_, rng_, plant::p_growing, this);
+                    auto np = std::make_shared<plant>(region_, rng_, plant::p_growing, this);
                     auto r = rng_->get_range(0, empty.size() - 1);
                     growing_list_.push_back(np);
-                    leaf_list_.push_back(np);
+                    child_list_.push_back(np);
                     plant_manager_->add_plant_later(np, ::get_x(empty[r]), ::get_y(empty[r]));
                 }
             }
         }
 
-        for (auto &p : leaf_list_)
+        std::vector<plant_list::iterator> to_delete;
+        for (auto i = child_list_.begin(); i != child_list_.end(); ++i)
         {
-            // Do something to target.
+            if ((*i)->is_dead())
+            {
+                to_delete.push_back(i);
+            }
+            else
+            {
+                // Do something to target.
+            }
         }
+
+        for (auto &i : to_delete)
+            child_list_.erase(i);
     }
 
 protected:
     plant_manager *plant_manager_;
-    leaf_list leaf_list_;
-    leaf_list growing_list_;
+    plant_list child_list_;
+    plant_list growing_list_;
     std::function<vec2()> target_;
     ssize_t growth_time_;
     ssize_t growth_timer_;
