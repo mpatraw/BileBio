@@ -37,12 +37,6 @@ public:
     }
     virtual ~player() { }
 
-    virtual const int &get_x() const { return x_; }
-    virtual int &get_x() { return x_; }
-
-    virtual const int &get_y() const { return y_; }
-    virtual int &get_y() { return y_; }
-
     virtual void perform(int dx, int dy, player::action act, std::function<void(std::weak_ptr<entity> src, entity::did did, std::weak_ptr<entity> targ)> on_did)
     {
         perform_to(x_ + dx, y_ + dy, act, on_did);
@@ -58,8 +52,6 @@ public:
                 auto p = entity_manager_->get_ptr({x, y});
                 if (!p.lock())
                 {
-                    x_ = x;
-                    y_ = y;
                     entity_manager_->move_ptr_to(entity_manager_->get_this_ptr(this).lock(), {x, y});
                     if (on_did != nullptr)
                         on_did(entity_manager_->get_this_ptr(this), entity::did_move, std::shared_ptr<entity>());
@@ -95,8 +87,6 @@ public:
     virtual attributes &get_attributes() { return attributes_; }
 
 protected:
-    int x_;
-    int y_;
     sparse_2d_map<entity> *entity_manager_;
     attributes attributes_;
 };
