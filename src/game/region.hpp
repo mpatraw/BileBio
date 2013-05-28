@@ -10,6 +10,7 @@
 
 #include <drunkard.h>
 
+#if 0
 template <typename... Args>
 inline auto get_x(Args&&... args) -> decltype(std::get<0>(std::forward<Args>(args)...))
 {
@@ -21,8 +22,7 @@ inline auto get_y(Args&&... args) -> decltype(std::get<1>(std::forward<Args>(arg
 {
     return std::get<1>(std::forward<Args>(args)...);
 }
-
-using vec2 = std::tuple<ssize_t, ssize_t>;
+#endif
 
 enum tile
 {
@@ -32,6 +32,8 @@ enum tile
 
 class region : private boost::noncopyable
 {
+private:
+    using int_pair = std::pair<int, int>;
 public:
     region() : width_(0), height_(0), drunk_(nullptr) { }
     ~region()
@@ -88,21 +90,21 @@ public:
         }
     }
 
-    vec2 get_random_empty_location()
+    int_pair get_random_empty_location()
     {
         unsigned x, y;
         drunkard_random_opened(drunk_, &x, &y);
-        return vec2(x, y);
+        return int_pair(x, y);
     }
 
     size_t get_width() const { return width_; }
     size_t get_height() const { return height_; }
 
-    bool walkable(ssize_t x, ssize_t y) const { return tile_at(x, y) >= t_floor; }
-    bool in_bounds(ssize_t x, ssize_t y) const
-    { return x >= 0 && x < (ssize_t)width_ && y >= 0 && y < (ssize_t)height_; }
-    const tile &tile_at(ssize_t x, ssize_t y) const { return tiles_[y * width_ + x]; }
-    tile &tile_at(ssize_t x, ssize_t y) { return tiles_[y * width_ + x]; }
+    bool walkable(int x, int y) const { return tile_at(x, y) >= t_floor; }
+    bool in_bounds(int x, int y) const
+    { return x >= 0 && x < (int)width_ && y >= 0 && y < (int)height_; }
+    const tile &tile_at(int x, int y) const { return tiles_[y * width_ + x]; }
+    tile &tile_at(int x, int y) { return tiles_[y * width_ + x]; }
 
 private:
     size_t width_;

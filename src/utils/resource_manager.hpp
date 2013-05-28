@@ -27,9 +27,9 @@ public:
     R &acquire(std::string key)
     {
         if (map_.find(std::type_index(typeid(R))) == map_.end())
-            throw std::out_of_range("aquire");
+            throw std::out_of_range("acquire");
         if (map_[std::type_index(typeid(R))].find(key) == map_[std::type_index(typeid(R))].end())
-            throw std::out_of_range("aquire");
+            throw std::out_of_range("acquire");
         return boost::any_cast<R &>(map_[std::type_index(typeid(R))][key]);
     }
 
@@ -37,9 +37,9 @@ public:
     const R &acquire(std::string key) const
     {
         if (map_.find(std::type_index(typeid(R))) == map_.end())
-            throw std::out_of_range("aquire");
+            throw std::out_of_range("acquire");
         if (map_.find(std::type_index(typeid(R)))->second.find(key) == map_.find(std::type_index(typeid(R)))->second.end())
-            throw std::out_of_range("aquire");
+            throw std::out_of_range("acquire");
         return boost::any_cast<const R &>(map_.find(std::type_index(typeid(R)))->second.find(key)->second);
     }
 private:

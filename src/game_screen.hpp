@@ -87,7 +87,7 @@ public:
         player_anim_.get_animation().update(dt);
     }
 
-    virtual void player_did(entity::did did, entity *targ)
+    virtual void player_did(entity::did did, std::weak_ptr<entity> targ)
     {
         if (did == entity::did_move)
         {
@@ -99,7 +99,6 @@ public:
         }
         else if (did == entity::did_attack || did == entity::did_miss)
         {
-            std::printf("%p\n", targ);
             player_destination_ = {the_game_->get_player().get_x() * tile_size,
                 the_game_->get_player().get_y() * tile_size};
             player_delta_ = player_destination_ - player_location_;
@@ -159,10 +158,10 @@ public:
 
                 // Render plants.
                 auto pl = the_game_->get_plant_at(x, y);
-                if (pl)
+                if (pl.lock())
                 {
                     std::string sprite = "";
-                    switch (pl->get_type())
+                    switch (std::static_pointer_cast<plant>(pl.lock())->get_type())
                     {
                     case plant::p_root:
                         sprite = "root";
@@ -174,10 +173,10 @@ public:
                         sprite = "growing";
                         break;
                     default:
-                        sprite = "tree";
                         break;
                     }
-                    win->draw(sprite_manager_->acquire<sf::RectangleShape>(sprite), t);
+                    if (sprite != "")
+                        win->draw(sprite_manager_->acquire<sf::RectangleShape>(sprite), t);
                 }
             }
         }
@@ -292,14 +291,12 @@ public:
         }
     }
 
-    virtual void on_did(entity *src, entity::did did, entity *targ)
+    virtual void on_did(std::weak_ptr<entity> src, entity::did did, std::weak_ptr<entity> targ)
     {
-        if (src == &the_game_->get_player())
+        if (auto sptr = src.lock())
         {
-            controller_->player_did(did, targ);
-        }
-        else
-        {
+            if (sptr.get() == &the_game_->get_player())
+                controller_->player_did(did, targ);
         }
     }
 
