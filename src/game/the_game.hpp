@@ -42,16 +42,16 @@ public:
     void reset()
     {
         the_region_->generate(20, 20);
-        auto loc = the_region_->get_random_empty_location();
+        auto loc = the_region_->get_random_empty_coord();
         entity_manager_->clear();
         entity_manager_->add_ptr(the_player_, {0, 0});
-        the_player_->perform_to(loc.first, loc.second, player::act_move, nullptr);
+        the_player_->perform_to({loc.first, loc.second}, player::act_move, nullptr);
 
         auto set = settings[level_];
         for (ssize_t i = 0; i < set.number_of_roots; ++i)
         {
-            auto v = the_region_->get_random_empty_location();
-            auto r = new root(the_region_.get(), &rng_, entity_manager_.get(), std::bind(&the_game::plant_target, std::ref(*this)));
+            auto v = the_region_->get_random_empty_coord();
+            auto r = new root(the_region_.get(), &rng_, entity_manager_.get(), std::bind(&the_game::player_coord, std::ref(*this)));
             entity_manager_->add_ptr(std::shared_ptr<plant>(r), {v.first, v.second});
         }
     }
@@ -61,7 +61,7 @@ public:
 
     void player_act(ssize_t dx, ssize_t dy, player::action act)
     {
-        the_player_->perform(dx, dy, act, on_did_);
+        the_player_->perform({dx, dy}, act, on_did_);
     }
 
     void rest_act()
@@ -74,17 +74,17 @@ public:
         entity_manager_->add_ptrs();
     }
 
-    std::pair<int, int> plant_target()
+    std::pair<int, int> player_coord()
     {
-        return std::pair<int, int>(the_player_->get_x(), the_player_->get_y());
+        return entity_manager_->get_coord(the_player_);
     }
 
-    std::weak_ptr<entity> get_plant_at(ssize_t x, ssize_t y) const { return entity_manager_->get_ptr({x, y}); }
-    bool get_plant_location(std::weak_ptr<entity> pl, std::pair<int, int> &v) const
+    std::weak_ptr<entity> get_entity_at(ssize_t x, ssize_t y) const { return entity_manager_->get_ptr({x, y}); }
+    bool get_entity_coord(std::weak_ptr<entity> pl, std::pair<int, int> &v) const
     {
         if (entity_manager_->exists(pl.lock()))
         {
-            v = entity_manager_->get_vec(pl.lock());
+            v = entity_manager_->get_coord(pl.lock());
             return true;
         }
         return false;

@@ -19,6 +19,11 @@ static constexpr double tile_size = 1.0 / tiles_per_screen;
 
 class player_controller
 {
+private:
+    using weak_ptr = std::weak_ptr<entity>;
+    using weak_const_ptr = std::weak_ptr<const entity>;
+    using shared_ptr = std::shared_ptr<entity>;
+    using shared_const_ptr = std::shared_ptr<const entity>;
 public:
     player_controller(the_game *tg, resource_manager *sm) :
         the_game_(tg), sprite_manager_(sm)
@@ -28,14 +33,15 @@ public:
         player_anim_.get_animation().set_loops(true);
         player_anim_.get_animation().add_frame("player");
         player_anim_.get_animation().start();
-        player_location_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
-        player_destination_ = {the_game_->get_player().get_x() * tile_size, the_game_->get_player().get_y() * tile_size};
+        auto loc = the_game_->player_coord();
+        player_coord_ = {loc.first * tile_size, loc.second * tile_size};
+        player_destination_ = {loc.first * tile_size, loc.second * tile_size};
         player_moving_ = false;
     }
 
     virtual ~player_controller() { }
 
-    const sf::Vector2f &get_location() const { return player_location_; }
+    const sf::Vector2f &get_coord() const { return player_coord_; }
     const state_animator &get_animator() const { return player_anim_; }
 
     virtual void update(double dt)
@@ -70,52 +76,66 @@ public:
         if (player_moving_)
         {
             player_timer_ += dt;
+            if (player_timer_ >= 0.25)
+            {
+                attacking_ = weak_ptr();
+                missing_ = weak_ptr();
+            }
+
             if (player_timer_ >= 0.5)
             {
-                player_location_ = player_destination_;
+                player_coord_ = player_destination_;
                 player_moving_ = false;
                 the_game_->rest_act();
             }
             else
             {
-                player_location_ = sf::Vector2f(
-                    player_location_.x + player_delta_.x * (dt / 0.5),
-                    player_location_.y + player_delta_.y * (dt / 0.5));
+                player_coord_ = sf::Vector2f(
+                    player_coord_.x + player_delta_.x * (dt / 0.5),
+                    player_coord_.y + player_delta_.y * (dt / 0.5));
             }
         }
 
         player_anim_.get_animation().update(dt);
     }
 
-    virtual void player_did(entity::did did, std::weak_ptr<entity> targ)
+    virtual void player_did(entity::did did, weak_ptr targ)
     {
+        auto loc = the_game_->player_coord();
         if (did == entity::did_move)
         {
-            player_destination_ = {the_game_->get_player().get_x() * tile_size,
-                the_game_->get_player().get_y() * tile_size};
-            player_delta_ = player_destination_ - player_location_;
+            player_destination_ = {loc.first * tile_size, loc.second * tile_size};
+            player_delta_ = player_destination_ - player_coord_;
             player_moving_ = true;
             player_timer_ = 0.0;
         }
         else if (did == entity::did_attack || did == entity::did_miss)
         {
-            player_destination_ = {the_game_->get_player().get_x() * tile_size,
-                the_game_->get_player().get_y() * tile_size};
-            player_delta_ = player_destination_ - player_location_;
+            if (did == entity::did_attack)
+                attacking_ = targ;
+            else
+                missing_ = targ;
+            player_destination_ = {loc.first * tile_size, loc.second * tile_size};
+            player_delta_ = player_destination_ - player_coord_;
             player_moving_ = true;
             player_timer_ = 0.0;
         }
     }
 
+    weak_const_ptr get_attacking() const { return attacking_; }
+    weak_const_ptr get_missing() const { return missing_; }
+
 protected:
     the_game *the_game_;
     resource_manager *sprite_manager_;
     state_animator player_anim_;
+    weak_ptr attacking_;
+    weak_ptr missing_;
 
     // Smooth scrolling.
     bool player_moving_;
     double player_timer_;
-    sf::Vector2f player_location_;
+    sf::Vector2f player_coord_;
     sf::Vector2f player_destination_;
     sf::Vector2f player_delta_;
 };
@@ -157,32 +177,44 @@ public:
                 }
 
                 // Render plants.
-                auto pl = the_game_->get_plant_at(x, y);
+                auto pl = the_game_->get_entity_at(x, y);
                 if (pl.lock())
                 {
                     std::string sprite = "";
-                    switch (std::static_pointer_cast<plant>(pl.lock())->get_type())
+                    if (auto sptr = std::dynamic_pointer_cast<plant>(pl.lock()))
                     {
-                    case plant::p_root:
-                        sprite = "root";
-                        break;
-                    case plant::p_vine:
-                        sprite = "vine";
-                        break;
-                    case plant::p_growing:
-                        sprite = "growing";
-                        break;
-                    default:
-                        break;
+                        switch (sptr->get_type())
+                        {
+                        case plant::p_root:
+                            sprite = "root";
+                            break;
+                        case plant::p_vine:
+                            sprite = "vine";
+                            break;
+                        case plant::p_growing:
+                            sprite = "growing";
+                            break;
+                        default:
+                            break;
+                        }
                     }
+
                     if (sprite != "")
-                        win->draw(sprite_manager_->acquire<sf::RectangleShape>(sprite), t);
+                    {
+                        auto temp = sprite_manager_->acquire<sf::RectangleShape>(sprite);
+                        if (pl.lock() == controller_->get_attacking().lock())
+                            temp.setFillColor(sf::Color(255, 128, 128, 255));
+                        else if (pl.lock() == controller_->get_missing().lock())
+                            temp.setFillColor(sf::Color(192, 192, 192, 255));
+
+                        win->draw(temp, t);
+                    }
                 }
             }
         }
 
         sf::Transform t;
-        t.translate(controller_->get_location());
+        t.translate(controller_->get_coord());
         t.combine(trans);
         win->draw(sprite_manager_->acquire<sf::RectangleShape>(controller_->get_animator().get_animation().get_texture()), t);
     }
@@ -258,8 +290,8 @@ public:
     {
         controller_->update(dt);
         game_view_.setCenter(
-            controller_->get_location().x + tile_size / 2,
-            controller_->get_location().y + tile_size / 2);
+            controller_->get_coord().x + tile_size / 2,
+            controller_->get_coord().y + tile_size / 2);
         the_game_renderer_->update(dt);
     }
 

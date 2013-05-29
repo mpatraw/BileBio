@@ -90,7 +90,7 @@ public:
         }
     }
 
-    int_pair get_random_empty_location()
+    int_pair get_random_empty_coord()
     {
         unsigned x, y;
         drunkard_random_opened(drunk_, &x, &y);

@@ -18,6 +18,11 @@ struct attributes
 
 class player : public entity, private boost::noncopyable
 {
+private:
+    using weak_ptr = std::weak_ptr<entity>;
+    using shared_ptr = std::shared_ptr<entity>;
+    using int_pair = std::pair<int, int>;
+    using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
 public:
     enum action
     {
@@ -37,41 +42,53 @@ public:
     }
     virtual ~player() { }
 
-    virtual void perform(int dx, int dy, player::action act, std::function<void(std::weak_ptr<entity> src, entity::did did, std::weak_ptr<entity> targ)> on_did)
+    virtual void perform(int_pair delta, player::action act, on_did_func on_did)
     {
-        perform_to(x_ + dx, y_ + dy, act, on_did);
+        auto p = entity_manager_->get_this_ptr(this);
+        if (auto sptr = p.lock())
+        {
+            auto loc = entity_manager_->get_coord(sptr);
+            perform_to({loc.first + delta.first, loc.second + delta.second}, act, on_did);
+        }
     }
 
-    virtual void perform_to(int x, int y, player::action act, std::function<void(std::weak_ptr<entity> src, entity::did did, std::weak_ptr<entity> targ)> on_did)
+    virtual void perform_to(int_pair loc, player::action act, on_did_func on_did)
     {
+        int x = loc.first;
+        int y = loc.second;
         switch (act)
         {
         case player::act_move:
             if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_floor)
             {
-                auto p = entity_manager_->get_ptr({x, y});
-                if (!p.lock())
+                auto pl = entity_manager_->get_ptr({x, y});
+                auto sptr = pl.lock();
+                // Move to location, nothing is there.
+                if (!sptr)
                 {
                     entity_manager_->move_ptr_to(entity_manager_->get_this_ptr(this).lock(), {x, y});
                     if (on_did != nullptr)
-                        on_did(entity_manager_->get_this_ptr(this), entity::did_move, std::shared_ptr<entity>());
+                        on_did(entity_manager_->get_this_ptr(this), entity::did_move, shared_ptr());
+
                 }
+                // Attack (default).
                 else
                 {
                     if (rng_->get_uniform() < vitals_.to_hit)
                     {
                         std::printf("Dealt %d damage\n", vitals_.damage);
-                        p.lock()->take_damage(vitals_.damage);
+                        sptr->take_damage(vitals_.damage);
                         if (on_did != nullptr)
-                            on_did(entity_manager_->get_this_ptr(this), entity::did_attack, p);
-                        if (p.lock()->is_dead())
-                            entity_manager_->del_ptr(p.lock());
+                            on_did(entity_manager_->get_this_ptr(this), entity::did_attack, pl);
+                        // Remove plant.
+                        if (sptr->is_dead())
+                            entity_manager_->del_ptr(sptr);
                     }
                     else
                     {
                         std::printf("Missed.\n");
                         if (on_did != nullptr)
-                            on_did(entity_manager_->get_this_ptr(this), entity::did_miss, p);
+                            on_did(entity_manager_->get_this_ptr(this), entity::did_miss, pl);
                     }
                 }
             }
