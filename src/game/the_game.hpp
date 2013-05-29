@@ -51,8 +51,11 @@ public:
         for (ssize_t i = 0; i < set.number_of_roots; ++i)
         {
             auto v = the_region_->get_random_empty_coord();
-            auto r = new root(the_region_.get(), &rng_, entity_manager_.get(), std::bind(&the_game::player_coord, std::ref(*this)));
-            entity_manager_->add_ptr(std::shared_ptr<plant>(r), {v.first, v.second});
+            if (v.first != loc.first && v.second != loc.second)
+            {
+                auto r = new root(the_region_.get(), &rng_, entity_manager_.get(), std::bind(&the_game::player_coord, std::ref(*this)));
+                entity_manager_->add_ptr(std::shared_ptr<plant>(r), {v.first, v.second});
+            }
         }
     }
 
