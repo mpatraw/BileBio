@@ -12,8 +12,6 @@ struct attributes
 {
     int energy;
     int max_energy;
-    int damage;
-    double chance_to_hit;
 };
 
 class player : public entity, private boost::noncopyable
@@ -38,7 +36,7 @@ public:
         entity(reg, r), entity_manager_(pm)
     {
         vitals_ = {2, 3, 2, 0.66};
-        attributes_ = {2, 3, 2, 0.66};
+        attributes_ = {2, 3};
     }
     virtual ~player() { }
 
