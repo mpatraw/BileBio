@@ -14,7 +14,7 @@
 #include <utils/resource_manager.hpp>
 #include <ui/simple_ui.hpp>
 
-static constexpr double tiles_per_screen = 7.0;
+static constexpr double tiles_per_screen = 5.0;
 static constexpr double tile_size = 1.0 / tiles_per_screen;
 
 class player_controller
@@ -28,7 +28,17 @@ public:
     player_controller(the_game *tg, resource_manager *sm) :
         the_game_(tg), sprite_manager_(sm)
     {
-        player_anim_.set_state("walking");
+        player_anim_.set_state("walking_s");
+        player_anim_.get_animation().set_duration(0.5);
+        player_anim_.get_animation().set_loops(true);
+        player_anim_.get_animation().add_frame("player_sw1");
+        player_anim_.get_animation().add_frame("player_sw2");
+        player_anim_.set_state("attacking_s");
+        player_anim_.get_animation().set_duration(0.5);
+        player_anim_.get_animation().set_loops(false);
+        player_anim_.get_animation().add_frame("player_sa");
+        player_anim_.get_animation().add_frame("player");
+        player_anim_.set_state("standing");
         player_anim_.get_animation().set_duration(0.5);
         player_anim_.get_animation().set_loops(true);
         player_anim_.get_animation().add_frame("player");
@@ -46,8 +56,11 @@ public:
 
     virtual void update(double dt)
     {
+        // Player turn over. Take events.
         if (!player_moving_)
         {
+            player_anim_.set_state("standing");
+            player_anim_.get_animation().start();
             ssize_t dx = 0, dy = 0;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
             {
@@ -73,6 +86,7 @@ public:
                 the_game_->player_act(dx, dy, player::act_move);
         }
 
+        // Player turn happening, update shit.
         if (player_moving_)
         {
             player_timer_ += dt;
@@ -108,6 +122,9 @@ public:
             player_delta_ = player_destination_ - player_coord_;
             player_moving_ = true;
             player_timer_ = 0.0;
+
+            player_anim_.set_state("walking_s");
+            player_anim_.get_animation().start();
         }
         else if (did == entity::did_attack || did == entity::did_miss)
         {
@@ -119,6 +136,8 @@ public:
             player_delta_ = player_destination_ - player_coord_;
             player_moving_ = true;
             player_timer_ = 0.0;
+            player_anim_.set_state("attacking_s");
+            player_anim_.get_animation().start();
         }
     }
 
@@ -251,6 +270,9 @@ public:
         manage_sprite(sprite_manager_, *resource_manager_, "vine", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "growing", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "player_sw1", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "player_sw2", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "player_sa", tile_size, tile_size);
 
         manage_sprite(sprite_manager_, *resource_manager_, "floor", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "rocks", tile_size, tile_size);

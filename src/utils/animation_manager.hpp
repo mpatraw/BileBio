@@ -53,14 +53,18 @@ public:
         if (!paused_ && (!done_ || loops_))
         {
             time_accumulator_ += dt;
-            if (time_accumulator_ >= duration_ / frames_.size() * current_frame_)
+            if (time_accumulator_ >= duration_ / frames_.size() * (current_frame_ + 1))
             {
-                ++current_frame_;
-                if (current_frame_ >= (ssize_t)frames_.size())
+                if (current_frame_ + 1 >= (ssize_t)frames_.size())
                 {
                     done_ = true;
-                    current_frame_ = 0;
+                    if (loops_)
+                        current_frame_ = 0;
                     time_accumulator_ -= duration_;
+                }
+                else
+                {
+                    ++current_frame_;
                 }
             }
         }

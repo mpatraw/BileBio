@@ -163,6 +163,9 @@ public:
                     }
                 }
 
+                for (auto &i : to_delete)
+                    child_list_.erase(i);
+
                 int count = 0;
                 for (auto &p : edges)
                 {
@@ -196,9 +199,6 @@ public:
                     // grow near target or random
                     // add to growing list
                 }
-
-                for (auto &i : to_delete)
-                    child_list_.erase(i);
             }
             else
             {

@@ -74,7 +74,10 @@ int main()
     load_resource<sf::Texture>(rm, "noheart", "resources/noheart.png");
     load_resource<sf::Texture>(rm, "noenergy", "resources/noenergy.png");
 
-    load_resource<sf::Texture>(rm, "player", "resources/player.png");
+    load_resource<sf::Texture>(rm, "player", "resources/player.png", sf::IntRect(0, 0, 64, 64));
+    load_resource<sf::Texture>(rm, "player_sw1", "resources/player.png", sf::IntRect(64, 0, 64, 64));
+    load_resource<sf::Texture>(rm, "player_sw2", "resources/player.png", sf::IntRect(128, 0, 64, 64));
+    load_resource<sf::Texture>(rm, "player_sa", "resources/player.png", sf::IntRect(192, 0, 64, 64));
     load_resource<sf::Texture>(rm, "root", "resources/root.png");
     load_resource<sf::Texture>(rm, "growing", "resources/growing.png");
     load_resource<sf::Texture>(rm, "vine", "resources/vine.png");
