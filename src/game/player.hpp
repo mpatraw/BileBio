@@ -33,7 +33,7 @@ public:
     };
 
     player(region *reg, rng *r, sparse_2d_map<entity> *pm) :
-        entity(reg, r), entity_manager_(pm)
+        entity(reg, r), entities_(pm)
     {
         vitals_ = {2, 3, 2, 0.66};
         attributes_ = {2, 3};
@@ -42,10 +42,10 @@ public:
 
     virtual void perform(int_pair delta, player::action act, on_did_func on_did)
     {
-        auto p = entity_manager_->get_this_ptr(this);
+        auto p = entities_->get_this_ptr(this);
         if (auto sptr = p.lock())
         {
-            auto loc = entity_manager_->get_coord(sptr);
+            auto loc = entities_->get_coord(sptr);
             perform_to({loc.first + delta.first, loc.second + delta.second}, act, on_did);
         }
     }
@@ -59,14 +59,14 @@ public:
         case player::act_move:
             if (region_->in_bounds(x, y) && region_->tile_at(x, y) >= t_floor)
             {
-                auto pl = entity_manager_->get_ptr({x, y});
+                auto pl = entities_->get_ptr({x, y});
                 auto sptr = pl.lock();
                 // Move to location, nothing is there.
                 if (!sptr)
                 {
-                    entity_manager_->move_ptr_to(entity_manager_->get_this_ptr(this).lock(), {x, y});
+                    entities_->move_ptr_to(entities_->get_this_ptr(this).lock(), {x, y});
                     if (on_did != nullptr)
-                        on_did(entity_manager_->get_this_ptr(this), entity::did_move, shared_ptr());
+                        on_did(entities_->get_this_ptr(this), entity::did_move, shared_ptr());
 
                 }
                 // Attack (default).
@@ -77,16 +77,16 @@ public:
                         std::printf("Dealt %d damage\n", vitals_.damage);
                         sptr->take_damage(vitals_.damage);
                         if (on_did != nullptr)
-                            on_did(entity_manager_->get_this_ptr(this), entity::did_attack, pl);
+                            on_did(entities_->get_this_ptr(this), entity::did_attack, pl);
                         // Remove plant.
                         if (sptr->is_dead())
-                            entity_manager_->del_ptr(sptr);
+                            entities_->del_ptr(sptr);
                     }
                     else
                     {
                         std::printf("Missed.\n");
                         if (on_did != nullptr)
-                            on_did(entity_manager_->get_this_ptr(this), entity::did_miss, pl);
+                            on_did(entities_->get_this_ptr(this), entity::did_miss, pl);
                     }
                 }
             }
@@ -102,7 +102,7 @@ public:
     virtual attributes &get_attributes() { return attributes_; }
 
 protected:
-    sparse_2d_map<entity> *entity_manager_;
+    sparse_2d_map<entity> *entities_;
     attributes attributes_;
 };
 

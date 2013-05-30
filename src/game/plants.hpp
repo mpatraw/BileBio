@@ -139,7 +139,7 @@ private:
     using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
 public:
     root(region *reg, rng *r, sparse_2d_map<entity> *pm, weak_ptr target) :
-        plant(reg, r, "root", target, std::weak_ptr<plant>()), entity_manager_(pm)
+        plant(reg, r, "root", target, std::weak_ptr<plant>()), entities_(pm)
     {
         growth_time_ = 3;
         growth_timer_ = 0;
@@ -159,7 +159,7 @@ public:
                 {
                     if (auto sptr = p.lock())
                     {
-                        auto c = entity_manager_->get_coord(sptr);
+                        auto c = entities_->get_coord(sptr);
                         replace_child<vine>(c);
                     }
                 }
@@ -204,8 +204,8 @@ public:
                     {
                         if (auto sptr = target_.lock())
                         {
-                            auto t = entity_manager_->get_coord(p.lock());
-                            auto c = entity_manager_->get_coord(sptr);
+                            auto t = entities_->get_coord(p.lock());
+                            auto c = entities_->get_coord(sptr);
                             auto a = (c.first - t.first);
                             auto b = (c.second - t.second);
                             if (std::sqrt(a * a + b * b) < 6)
@@ -229,7 +229,7 @@ public:
             }
             else
             {
-                auto empty = empty_neighbors(entity_manager_->get_this_ptr(this));
+                auto empty = empty_neighbors(entities_->get_this_ptr(this));
                 if (empty.size() > 0)
                 {
                     auto r = rng_->get_range(0, empty.size() - 1);
@@ -243,7 +243,7 @@ public:
     }
 
 protected:
-    sparse_2d_map<entity> *entity_manager_;
+    sparse_2d_map<entity> *entities_;
     std::vector<std::weak_ptr<plant>> child_list_;
     std::vector<std::weak_ptr<plant>> growing_list_;
     int growth_time_;
@@ -256,15 +256,15 @@ private:
     {
         std::vector<int_pair> neighbors;
         int_pair around;
-        if (entity_manager_->exists(p.lock()))
+        if (entities_->exists(p.lock()))
         {
-            around = entity_manager_->get_coord(p.lock());
+            around = entities_->get_coord(p.lock());
             for (int dx = -range; dx <= range; ++dx)
             {
                 for (int dy = -range; dy <= range; ++dy)
                 {
                     int_pair v = {around.first + dx, around.second + dy};
-                    if (!entity_manager_->exists(v) && region_->walkable(v.first, v.second))
+                    if (!entities_->exists(v) && region_->walkable(v.first, v.second))
                         neighbors.push_back(v);
                 }
             }
@@ -280,7 +280,7 @@ private:
             for (int dy = -range; dy <= range; ++dy)
             {
                 int_pair v = {around.first + dx, around.second + dy};
-                if (!entity_manager_->exists(v) && region_->walkable(v.first, v.second))
+                if (!entities_->exists(v) && region_->walkable(v.first, v.second))
                     neighbors.push_back(v);
             }
         }
@@ -293,16 +293,16 @@ private:
         auto np = std::make_shared<P>(region_, rng_, target_, shared_from_this());
         growing_list_.push_back(np);
         child_list_.push_back(np);
-        entity_manager_->add_ptr_later(np, coord);
+        entities_->add_ptr_later(np, coord);
     }
 
     template <typename P>
     void replace_child(int_pair coord)
     {
-        entity_manager_->del_coord(coord);
+        entities_->del_coord(coord);
         auto np = std::make_shared<P>(region_, rng_, target_, shared_from_this());
         child_list_.push_back(np);
-        entity_manager_->add_ptr_later(np, coord);
+        entities_->add_ptr_later(np, coord);
     }
 };
 
