@@ -39,6 +39,7 @@ public:
     }
     virtual ~plant()
     {
+        std::printf("%s destroyd\n", type_.c_str());
     }
 
     virtual plant::type get_type() const { return type_; }
@@ -159,10 +160,7 @@ public:
                     if (auto sptr = p.lock())
                     {
                         auto c = entity_manager_->get_coord(sptr);
-                        entity_manager_->del_ptr(sptr);
-                        auto np = std::make_shared<plant>(region_, rng_, "vine", target_, shared_from_this());
-                        child_list_.push_back(np);
-                        entity_manager_->add_ptr(np, c);
+                        replace_child<vine>(c);
                     }
                 }
                 growing_list_.clear();
@@ -188,6 +186,7 @@ public:
                     }
                 }
 
+                // Delete unreferenced plants.
                 for (auto &i : to_delete)
                     child_list_.erase(i);
 
@@ -203,25 +202,29 @@ public:
                     }
                     else
                     {
-                        //if (target_)
-                        //{
-                        //    int_pair targ = target_();
-                        //}
-                        //else
+                        if (auto sptr = target_.lock())
+                        {
+                            auto t = entity_manager_->get_coord(p.lock());
+                            auto c = entity_manager_->get_coord(sptr);
+                            auto a = (c.first - t.first);
+                            auto b = (c.second - t.second);
+                            if (std::sqrt(a * a + b * b) < 6)
+                            {
+                                auto empty = empty_neighbors(sptr);
+                                if (empty.size() > 0)
+                                {
+                                    auto r = rng_->get_range(0, empty.size() - 1);
+                                    grow_child<pod>(int_pair(empty[r].first, empty[r].second));
+                                }
+                            }
+                        }
+                        else
                         {
                             auto empty = empty_neighbors(p);
                             auto r = rng_->get_range(0, empty.size() - 1);
-                            auto np = std::make_shared<pod>(region_, rng_, target_, shared_from_this());
-                            growing_list_.push_back(np);
-                            child_list_.push_back(np);
-                            entity_manager_->add_ptr_later(np, int_pair(empty[r].first, empty[r].second));
+                            grow_child<pod>(int_pair(empty[r].first, empty[r].second));
                         }
                     }
-                    // if (grow)
-                    // replace
-                    // else (upgrade)
-                    // grow near target or random
-                    // add to growing list
                 }
             }
             else
@@ -229,11 +232,8 @@ public:
                 auto empty = empty_neighbors(entity_manager_->get_this_ptr(this));
                 if (empty.size() > 0)
                 {
-                    auto np = std::make_shared<pod>(region_, rng_, target_, shared_from_this());
                     auto r = rng_->get_range(0, empty.size() - 1);
-                    growing_list_.push_back(np);
-                    child_list_.push_back(np);
-                    entity_manager_->add_ptr_later(np, int_pair(empty[r].first, empty[r].second));
+                    grow_child<pod>(int_pair(empty[r].first, empty[r].second));
                 }
                 else
                 {
@@ -285,6 +285,24 @@ private:
             }
         }
         return neighbors;
+    }
+
+    template <typename P>
+    void grow_child(int_pair coord)
+    {
+        auto np = std::make_shared<P>(region_, rng_, target_, shared_from_this());
+        growing_list_.push_back(np);
+        child_list_.push_back(np);
+        entity_manager_->add_ptr_later(np, coord);
+    }
+
+    template <typename P>
+    void replace_child(int_pair coord)
+    {
+        entity_manager_->del_coord(coord);
+        auto np = std::make_shared<P>(region_, rng_, target_, shared_from_this());
+        child_list_.push_back(np);
+        entity_manager_->add_ptr_later(np, coord);
     }
 };
 
