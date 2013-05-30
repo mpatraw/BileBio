@@ -210,9 +210,9 @@ public:
                     {
                         auto temp = sprite_manager_->acquire<sf::RectangleShape>(sprite);
                         if (pl.lock() == controller_->get_attacking().lock())
-                            temp.setFillColor(sf::Color(255, 128, 128, 255));
+                            temp.setFillColor(sf::Color(255, 0, 0, 255));
                         else if (pl.lock() == controller_->get_missing().lock())
-                            temp.setFillColor(sf::Color(192, 192, 192, 255));
+                            temp.setFillColor(sf::Color(255, 255, 255, 255));
 
                         win->draw(temp, t);
                     }
@@ -256,7 +256,7 @@ public:
 
         manage_sprite(sprite_manager_, *resource_manager_, "root", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "vine", tile_size, tile_size);
-        manage_sprite(sprite_manager_, *resource_manager_, "growing", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "pod", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player_sw1", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player_sw2", tile_size, tile_size);

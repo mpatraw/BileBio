@@ -12,13 +12,17 @@
 #include <random.hpp>
 
 // Current plant types:
-// "growing"
+// "pod"
 // "root"
 // "vine"
 // "flower"
 // "fruit"
 
-class plant : public entity, private boost::noncopyable
+struct biomass
+{
+};
+
+class plant : public entity, public std::enable_shared_from_this<plant>, private boost::noncopyable
 {
 private:
     using weak_ptr = std::weak_ptr<entity>;
@@ -46,32 +50,6 @@ public:
         (void)on_did;
     }
 
-    virtual void grow_into(plant::type type)
-    {
-        grow_ = type;
-    }
-
-    virtual void grow()
-    {
-        type_ = grow_;
-        if (type_ == "growing")
-        {
-            vitals_ = {1, 1, 0, 0.0};
-        }
-        else if (type_ == "vine")
-        {
-            vitals_ = {3, 3, 0, 0.0};
-        }
-        else if (type_ == "flower")
-        {
-            vitals_ = {3, 3, 0, 0.0};
-        }
-        else if (type_ == "fruit")
-        {
-            vitals_ = {1, 1, 0, 0.0};
-        }
-    }
-
 protected:
     plant::type type_;
     plant::type grow_;
@@ -80,8 +58,57 @@ protected:
     std::weak_ptr<plant> parent_;
 };
 
-struct biomass
+class pod : public plant, private boost::noncopyable
 {
+private:
+    using weak_ptr = std::weak_ptr<entity>;
+    using shared_ptr = std::shared_ptr<entity>;
+    using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
+public:
+
+    pod(region *reg, rng *r, weak_ptr target, std::weak_ptr<plant> parent) :
+        plant(reg, r, "pod", target, parent)
+    {
+        vitals_ = {1, 1, 0, 0.0};
+    }
+    virtual ~pod()
+    {
+    }
+
+    virtual void act(on_did_func on_did)
+    {
+        (void)on_did;
+    }
+
+protected:
+};
+
+class vine : public plant, private boost::noncopyable
+{
+private:
+    using weak_ptr = std::weak_ptr<entity>;
+    using shared_ptr = std::shared_ptr<entity>;
+    using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
+public:
+
+    vine(region *reg, rng *r, weak_ptr target, std::weak_ptr<plant> parent) :
+        plant(reg, r, "vine", target, parent)
+    {
+        vitals_ = {3, 3, 0, 0.0};
+            vitals_ = {1, 1, 0, 0.0}; // Growing
+            vitals_ = {3, 3, 0, 0.0}; // Flower
+            vitals_ = {1, 1, 0, 0.0}; // Fruit
+    }
+    virtual ~vine()
+    {
+    }
+
+    virtual void act(on_did_func on_did)
+    {
+        (void)on_did;
+    }
+
+protected:
 };
 
 /*
@@ -130,7 +157,13 @@ public:
                 for (auto &p : growing_list_)
                 {
                     if (auto sptr = p.lock())
-                        sptr->grow();
+                    {
+                        auto c = entity_manager_->get_coord(sptr);
+                        entity_manager_->del_ptr(sptr);
+                        auto np = std::make_shared<plant>(region_, rng_, "vine", target_, shared_from_this());
+                        child_list_.push_back(np);
+                        entity_manager_->add_ptr(np, c);
+                    }
                 }
                 growing_list_.clear();
                 growth_timer_ = 0;
@@ -178,8 +211,7 @@ public:
                         {
                             auto empty = empty_neighbors(p);
                             auto r = rng_->get_range(0, empty.size() - 1);
-                            auto np = std::make_shared<plant>(region_, rng_, "growing", target_, std::static_pointer_cast<plant>(std::shared_ptr<entity>(entity_manager_->get_this_ptr(this))));
-                            np->grow_into("vine");
+                            auto np = std::make_shared<pod>(region_, rng_, target_, shared_from_this());
                             growing_list_.push_back(np);
                             child_list_.push_back(np);
                             entity_manager_->add_ptr_later(np, int_pair(empty[r].first, empty[r].second));
@@ -197,8 +229,7 @@ public:
                 auto empty = empty_neighbors(entity_manager_->get_this_ptr(this));
                 if (empty.size() > 0)
                 {
-                    auto np = std::make_shared<plant>(region_, rng_, "growing", target_, std::static_pointer_cast<plant>(std::shared_ptr<entity>(entity_manager_->get_this_ptr(this))));
-                    np->grow_into("vine");
+                    auto np = std::make_shared<pod>(region_, rng_, target_, shared_from_this());
                     auto r = rng_->get_range(0, empty.size() - 1);
                     growing_list_.push_back(np);
                     child_list_.push_back(np);
