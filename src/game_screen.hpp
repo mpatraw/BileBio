@@ -16,6 +16,7 @@
 
 static constexpr double tiles_per_screen = 5.0;
 static constexpr double tile_size = 1.0 / tiles_per_screen;
+static constexpr double turn_length_s = 0.5;
 
 class player_controller
 {
@@ -29,17 +30,17 @@ public:
         the_game_(tg), sprite_manager_(sm)
     {
         player_anim_.set_state("walking_s");
-        player_anim_.get_animation().set_duration(0.5);
+        player_anim_.get_animation().set_duration(turn_length_s);
         player_anim_.get_animation().set_loops(true);
         player_anim_.get_animation().add_frame("player_sw1");
         player_anim_.get_animation().add_frame("player_sw2");
         player_anim_.set_state("attacking_s");
-        player_anim_.get_animation().set_duration(0.5);
+        player_anim_.get_animation().set_duration(turn_length_s);
         player_anim_.get_animation().set_loops(false);
         player_anim_.get_animation().add_frame("player_sa");
         player_anim_.get_animation().add_frame("player");
         player_anim_.set_state("standing");
-        player_anim_.get_animation().set_duration(0.5);
+        player_anim_.get_animation().set_duration(turn_length_s);
         player_anim_.get_animation().set_loops(true);
         player_anim_.get_animation().add_frame("player");
         player_anim_.get_animation().start();
@@ -90,13 +91,13 @@ public:
         if (player_moving_)
         {
             player_timer_ += dt;
-            if (player_timer_ >= 0.25)
+            if (player_timer_ >= turn_length_s / 2.0)
             {
                 attacking_ = weak_ptr();
                 missing_ = weak_ptr();
             }
 
-            if (player_timer_ >= 0.5)
+            if (player_timer_ >= turn_length_s)
             {
                 player_coord_ = player_destination_;
                 player_moving_ = false;
@@ -105,8 +106,8 @@ public:
             else
             {
                 player_coord_ = sf::Vector2f(
-                    player_coord_.x + player_delta_.x * (dt / 0.5),
-                    player_coord_.y + player_delta_.y * (dt / 0.5));
+                    player_coord_.x + player_delta_.x * (dt / turn_length_s),
+                    player_coord_.y + player_delta_.y * (dt / turn_length_s));
             }
         }
 
@@ -202,20 +203,7 @@ public:
                     std::string sprite = "";
                     if (auto sptr = std::dynamic_pointer_cast<plant>(pl.lock()))
                     {
-                        switch (sptr->get_type())
-                        {
-                        case plant::p_root:
-                            sprite = "root";
-                            break;
-                        case plant::p_vine:
-                            sprite = "vine";
-                            break;
-                        case plant::p_growing:
-                            sprite = "growing";
-                            break;
-                        default:
-                            break;
-                        }
+                        sprite = sptr->get_type();
                     }
 
                     if (sprite != "")

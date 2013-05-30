@@ -53,7 +53,7 @@ public:
             auto v = the_region_->get_random_empty_coord();
             if (v.first != loc.first && v.second != loc.second)
             {
-                auto r = new root(the_region_.get(), &rng_, entity_manager_.get(), std::bind(&the_game::player_coord, std::ref(*this)));
+                auto r = new root(the_region_.get(), &rng_, entity_manager_.get(), the_player_);
                 entity_manager_->add_ptr(std::shared_ptr<plant>(r), {v.first, v.second});
             }
         }

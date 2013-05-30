@@ -11,6 +11,13 @@
 #include <entity.hpp>
 #include <random.hpp>
 
+// Current plant types:
+// "growing"
+// "root"
+// "vine"
+// "flower"
+// "fruit"
+
 class plant : public entity, private boost::noncopyable
 {
 private:
@@ -18,17 +25,11 @@ private:
     using shared_ptr = std::shared_ptr<entity>;
     using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
 public:
-    enum type
-    {
-        p_growing,
-        p_root,
-        p_vine,
-        p_flower,
-        p_fruit,
-    };
 
-    plant(region *reg, rng *r, plant::type type, std::weak_ptr<plant> parent=std::weak_ptr<plant>()) :
-        entity(reg, r), type_(type), parent_(parent)
+    using type = std::string;
+
+    plant(region *reg, rng *r, plant::type type, weak_ptr target, std::weak_ptr<plant> parent) :
+        entity(reg, r), type_(type), target_(target), parent_(parent)
     {
         grow_ = type;
     }
@@ -37,13 +38,13 @@ public:
     }
 
     virtual plant::type get_type() const { return type_; }
+    virtual weak_ptr get_target() const { return target_; }
+    virtual const weak_ptr get_parent() const { return parent_; }
 
     virtual void act(on_did_func on_did)
     {
         (void)on_did;
     }
-
-    virtual const weak_ptr get_parent() const { return parent_; }
 
     virtual void grow_into(plant::type type)
     {
@@ -53,32 +54,28 @@ public:
     virtual void grow()
     {
         type_ = grow_;
-        switch (type_)
+        if (type_ == "growing")
         {
-        case plant::p_growing:
             vitals_ = {1, 1, 0, 0.0};
-            break;
-
-        case plant::p_vine:
+        }
+        else if (type_ == "vine")
+        {
             vitals_ = {3, 3, 0, 0.0};
-            break;
-
-        case plant::p_flower:
+        }
+        else if (type_ == "flower")
+        {
             vitals_ = {3, 3, 0, 0.0};
-            break;
-
-        case plant::p_fruit:
+        }
+        else if (type_ == "fruit")
+        {
             vitals_ = {1, 1, 0, 0.0};
-            break;
-
-        default:
-            break;
         }
     }
 
 protected:
     plant::type type_;
     plant::type grow_;
+    weak_ptr target_;
     // Can't be shared. Would impose a circular reference.
     std::weak_ptr<plant> parent_;
 };
@@ -113,8 +110,8 @@ private:
     using target_func = std::function<int_pair()>;
     using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
 public:
-    root(region *reg, rng *r, sparse_2d_map<entity> *pm, target_func target=target_func()) :
-        plant(reg, r, plant::p_root), entity_manager_(pm), target_(target)
+    root(region *reg, rng *r, sparse_2d_map<entity> *pm, weak_ptr target) :
+        plant(reg, r, "root", target, std::weak_ptr<plant>()), entity_manager_(pm)
     {
         growth_time_ = 3;
         growth_timer_ = 0;
@@ -122,11 +119,6 @@ public:
         growth_range_ = 5;
     }
     virtual ~root() { }
-
-    virtual void set_target_function(target_func target)
-    {
-        target_ = target;
-    }
 
     virtual void act(on_did_func on_did)
     {
@@ -186,8 +178,8 @@ public:
                         {
                             auto empty = empty_neighbors(p);
                             auto r = rng_->get_range(0, empty.size() - 1);
-                            auto np = std::make_shared<plant>(region_, rng_, plant::p_growing, std::static_pointer_cast<plant>(std::shared_ptr<entity>(entity_manager_->get_this_ptr(this))));
-                            np->grow_into(plant::p_vine);
+                            auto np = std::make_shared<plant>(region_, rng_, "growing", target_, std::static_pointer_cast<plant>(std::shared_ptr<entity>(entity_manager_->get_this_ptr(this))));
+                            np->grow_into("vine");
                             growing_list_.push_back(np);
                             child_list_.push_back(np);
                             entity_manager_->add_ptr_later(np, int_pair(empty[r].first, empty[r].second));
@@ -205,8 +197,8 @@ public:
                 auto empty = empty_neighbors(entity_manager_->get_this_ptr(this));
                 if (empty.size() > 0)
                 {
-                    auto np = std::make_shared<plant>(region_, rng_, plant::p_growing, std::static_pointer_cast<plant>(std::shared_ptr<entity>(entity_manager_->get_this_ptr(this))));
-                    np->grow_into(plant::p_vine);
+                    auto np = std::make_shared<plant>(region_, rng_, "growing", target_, std::static_pointer_cast<plant>(std::shared_ptr<entity>(entity_manager_->get_this_ptr(this))));
+                    np->grow_into("vine");
                     auto r = rng_->get_range(0, empty.size() - 1);
                     growing_list_.push_back(np);
                     child_list_.push_back(np);
@@ -223,7 +215,6 @@ protected:
     sparse_2d_map<entity> *entity_manager_;
     std::vector<std::weak_ptr<plant>> child_list_;
     std::vector<std::weak_ptr<plant>> growing_list_;
-    target_func target_;
     int growth_time_;
     int growth_timer_;
     int growth_count_;
