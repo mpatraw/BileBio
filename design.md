@@ -91,18 +91,18 @@ nice, unharming plants and fruits, plants in an evil disposition grow harmful pl
 deadly flowers.
 
 **Roots**
-`
+```
 4 Hearts
 0 Damage
 Spawns: Vines
 Roots are the most basic type of plant. From them they spawn other plants. Kill a root
 and the plant stops growing (doesn't stop attacking).
-`
+```
 **Vines**
-`
+```
 2 Hearts
 0 Damage
-`
+```
 
 
 * Roots
