@@ -76,10 +76,10 @@ int main()
 
     load_resource<sf::Texture>(rm, "player", "resources/player.png", sf::IntRect(0, 0, 64, 64));
     load_resource<sf::Texture>(rm, "player_sw1", "resources/player.png", sf::IntRect(64, 0, 64, 64));
-    load_resource<sf::Texture>(rm, "player_sw2", "resources/player.png", sf::IntRect(128, 0, 64, 64));
-    load_resource<sf::Texture>(rm, "player_sa", "resources/player.png", sf::IntRect(192, 0, 64, 64));
+    load_resource<sf::Texture>(rm, "player_sw2", "resources/player.png", sf::IntRect(64*2, 0, 64, 64));
+    load_resource<sf::Texture>(rm, "player_sa", "resources/player.png", sf::IntRect(64*3, 0, 64, 64));
     load_resource<sf::Texture>(rm, "root", "resources/root.png");
-    load_resource<sf::Texture>(rm, "pod", "resources/pod.png");
+    load_resource<sf::Texture>(rm, "seed", "resources/seed.png", sf::IntRect(64*2, 0, 64, 64));
     load_resource<sf::Texture>(rm, "vine", "resources/vine.png");
 
     load_resource<sf::Texture>(rm, "floor", "resources/jungle_floor.png");

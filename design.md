@@ -37,9 +37,9 @@ to be activated. Sometimes holding shift will be required if the special has a r
 Pressing '4' selects a special item, this item can be used in the same way a special
 move can. You can only carry one special item at a time.
 
-When you kill a root, or just by exploring, you have a chance to find upgrades. These
-can increase your health, energy, damage, or skills. However, you can only place 5 skills
-and 10 attributes.
+When you kill a root, or just by exploring, you have a chance to find nectar. Nectar
+can be used to upgrade you stats. Only a maximum of 10 stats upgrades, and 5 skill
+upgrades are allowed.
 
 #### Possible Animals
 
@@ -86,12 +86,26 @@ make it grow something or change it's disposition.
 As you progress through the levels, plants increase in hostility and grow more interesting
 and deadly flowers and vines.
 
-Plants have 3 dispositions: evil, neutral, good. Plants in a good disposition grow
+Plants have 2 dispositions: evil and good. Plants in a good disposition grow
 nice, unharming plants and fruits, plants in an evil disposition grow harmful plants and
 deadly flowers.
 
-**Types of plants**
-* Roots, roots grow vines right next to it.
+**Roots**
+`
+4 Hearts
+0 Damage
+Spawns: Vines
+Roots are the most basic type of plant. From them they spawn other plants. Kill a root
+and the plant stops growing (doesn't stop attacking).
+`
+**Vines**
+`
+2 Hearts
+0 Damage
+`
+
+
+* Roots
 * Vines, vines grow at any square within 5.
   * Vines
   * Thick vines (lots of health)
@@ -102,30 +116,6 @@ deadly flowers.
 * Fruits
   * Red fruit (drops health)
   * Yellow fruit (drops energy)
-
-Only roots and vines grow more roots and vines. A growth process is typically 3
-turns, and a plant can only grow 1+ thing at a time. Vines grow *towards* the
-player if the player is in range, usually as far away as possible to *trap* the player.
-
-A vine has a chance to grow into a fruit or flower, instead of expanding.
-
-A growing plant is unidentifiably but still attackable (all growing plants look the
-same).
-
-Steps:
-1a. If growing
-  1. Increment growth period for all plants growing
-  2. If done growing
-    1. Add plants on growth list to plant list
-    2. Set to not growing
-1b. If not growing
-  1. Find N plants on the outer edges of the whole plant group.
-  2a. Check if upgrade, or grow
-    1. Replace and set new plant to grow
-  2b. If grow instead
-    1. Find target to grow, if none, pick random area unnoccupied.
-  3. Add to growing list.
-2. Update all plants to do something to target. (attack)
 
 ## TODO
 

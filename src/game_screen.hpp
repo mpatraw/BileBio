@@ -256,7 +256,7 @@ public:
 
         manage_sprite(sprite_manager_, *resource_manager_, "root", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "vine", tile_size, tile_size);
-        manage_sprite(sprite_manager_, *resource_manager_, "pod", tile_size, tile_size);
+        manage_sprite(sprite_manager_, *resource_manager_, "seed", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player_sw1", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "player_sw2", tile_size, tile_size);

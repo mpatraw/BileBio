@@ -12,7 +12,7 @@
 #include <random.hpp>
 
 // Current plant types:
-// "pod"
+// "seed"
 // "root"
 // "vine"
 // "flower"
@@ -51,37 +51,14 @@ public:
         (void)on_did;
     }
 
+    virtual plant::type grows_into() = 0;
+
 protected:
     plant::type type_;
     plant::type grow_;
     weak_ptr target_;
     // Can't be shared. Would impose a circular reference.
     std::weak_ptr<plant> parent_;
-};
-
-class pod : public plant, private boost::noncopyable
-{
-private:
-    using weak_ptr = std::weak_ptr<entity>;
-    using shared_ptr = std::shared_ptr<entity>;
-    using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
-public:
-
-    pod(region *reg, rng *r, weak_ptr target, std::weak_ptr<plant> parent) :
-        plant(reg, r, "pod", target, parent)
-    {
-        vitals_ = {1, 1, 0, 0.0};
-    }
-    virtual ~pod()
-    {
-    }
-
-    virtual void act(on_did_func on_did)
-    {
-        (void)on_did;
-    }
-
-protected:
 };
 
 class vine : public plant, private boost::noncopyable
@@ -96,7 +73,7 @@ public:
         plant(reg, r, "vine", target, parent)
     {
         vitals_ = {3, 3, 0, 0.0};
-            vitals_ = {1, 1, 0, 0.0}; // Growing
+            vitals_ = {1, 1, 0, 0.0}; // Seed
             vitals_ = {3, 3, 0, 0.0}; // Flower
             vitals_ = {1, 1, 0, 0.0}; // Fruit
     }
@@ -109,7 +86,43 @@ public:
         (void)on_did;
     }
 
+    virtual plant::type grows_into()
+    {
+        return "";
+    }
+
 protected:
+};
+
+class seed : public plant, private boost::noncopyable
+{
+private:
+    using weak_ptr = std::weak_ptr<entity>;
+    using shared_ptr = std::shared_ptr<entity>;
+    using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
+public:
+
+    seed(region *reg, rng *r, weak_ptr target, std::weak_ptr<plant> parent, plant::type into) :
+        plant(reg, r, "seed", target, parent), into_(into)
+    {
+        vitals_ = {1, 1, 0, 0.0};
+    }
+    virtual ~seed()
+    {
+    }
+
+    virtual void act(on_did_func on_did)
+    {
+        (void)on_did;
+    }
+
+    virtual plant::type grows_into()
+    {
+        return into_;
+    }
+
+protected:
+    plant::type into_;
 };
 
 /*
@@ -141,6 +154,7 @@ public:
     root(region *reg, rng *r, sparse_2d_map<entity> *pm, weak_ptr target) :
         plant(reg, r, "root", target, std::weak_ptr<plant>()), entities_(pm)
     {
+        growing_ = false;
         growth_time_ = 3;
         growth_timer_ = 0;
         growth_count_ = 1;
@@ -151,47 +165,48 @@ public:
     virtual void act(on_did_func on_did)
     {
         (void)on_did;
-        if (growing_list_.size())
+
+        std::vector<std::vector<std::weak_ptr<plant>>::iterator> to_delete;
+        for (auto i = child_list_.begin(); i != child_list_.end(); ++i)
+            if (!i->lock())
+                to_delete.push_back(i);
+        for (auto &i : to_delete)
+            child_list_.erase(i);
+
+        if (growing_)
         {
             if (++growth_timer_ >= growth_time_)
             {
-                for (auto &p : growing_list_)
+                for (auto &child : child_list_)
                 {
-                    if (auto sptr = p.lock())
+                    if (auto sptr = child.lock())
                     {
-                        auto c = entities_->get_coord(sptr);
-                        grow_child("vine", c, false);
+                        if (sptr->get_type() == "seed")
+                        {
+                            hatch_seed(std::static_pointer_cast<seed>(sptr));
+                        }
                     }
                 }
-                growing_list_.clear();
+                growing_ = false;
                 growth_timer_ = 0;
             }
         }
         else
         {
-            if (child_list_.size())
+            // Find edges.
+            std::vector<std::weak_ptr<plant>> edges;
+            for (auto &child : child_list_)
+                if (empty_neighbors(child).size() > 0)
+                    edges.push_back(child);
+            if (empty_neighbors(shared_from_this()).size() > 0)
+                edges.push_back(shared_from_this());
+
+            rng_->shuffle(edges.begin(), edges.end());
+
+            int count = 0;
+            for (auto &edge : edges)
             {
-                std::vector<std::vector<std::weak_ptr<plant>>::iterator> to_delete;
-                std::vector<std::weak_ptr<plant>> edges;
-
-                for (auto i = child_list_.begin(); i != child_list_.end(); ++i)
-                {
-                    if (!i->lock())
-                    {
-                        to_delete.push_back(i);
-                    }
-                    else if (empty_neighbors(*i).size() > 0)
-                    {
-                        edges.push_back(*i);
-                    }
-                }
-
-                // Delete unreferenced plants.
-                for (auto &i : to_delete)
-                    child_list_.erase(i);
-
-                int count = 0;
-                for (auto &p : edges)
+                if (auto edge_sptr = edge.lock())
                 {
                     if (++count > growth_count_)
                         break;
@@ -202,63 +217,62 @@ public:
                     }
                     else
                     {
-                        if (auto sptr = target_.lock())
+                        if (auto targ_sptr = target_.lock())
                         {
-                            auto t = entities_->get_coord(p.lock());
-                            auto c = entities_->get_coord(sptr);
+                            auto t = entities_->get_coord(edge_sptr);
+                            auto c = entities_->get_coord(targ_sptr);
                             auto a = (c.first - t.first);
                             auto b = (c.second - t.second);
                             if (std::sqrt(a * a + b * b) < 6)
                             {
-                                auto empty = empty_neighbors(sptr);
+                                auto empty = empty_neighbors(targ_sptr);
                                 if (empty.size() > 0)
                                 {
                                     auto r = rng_->get_range(0, empty.size() - 1);
-                                    grow_child("pod", int_pair(empty[r].first, empty[r].second));
+                                    grow_seed("vine", int_pair(empty[r].first, empty[r].second));
                                 }
+                            }
+                            else
+                            {
+                                auto empty = empty_neighbors(edge_sptr);
+                                auto r = rng_->get_range(0, empty.size() - 1);
+                                grow_seed("vine", int_pair(empty[r].first, empty[r].second));
                             }
                         }
                         else
                         {
-                            auto empty = empty_neighbors(p);
+                            auto empty = empty_neighbors(edge_sptr);
                             auto r = rng_->get_range(0, empty.size() - 1);
-                            grow_child("pod", int_pair(empty[r].first, empty[r].second));
+                            grow_seed("vine", int_pair(empty[r].first, empty[r].second));
                         }
                     }
                 }
             }
-            else
-            {
-                auto empty = empty_neighbors(entities_->get_this_ptr(this));
-                if (empty.size() > 0)
-                {
-                    auto r = rng_->get_range(0, empty.size() - 1);
-                    grow_child("pod", int_pair(empty[r].first, empty[r].second));
-                }
-                else
-                {
-                }
-            }
+            growing_ = true;
         }
+    }
+
+    virtual plant::type grows_into()
+    {
+        return "";
     }
 
 protected:
     sparse_2d_map<entity> *entities_;
     std::vector<std::weak_ptr<plant>> child_list_;
-    std::vector<std::weak_ptr<plant>> growing_list_;
+    bool growing_;
     int growth_time_;
     int growth_timer_;
     int growth_count_;
     int growth_range_;
 
 private:
-    std::vector<int_pair> empty_neighbors(std::weak_ptr<entity> p, int range=1)
+    std::vector<int_pair> empty_neighbors(std::weak_ptr<entity> pl, int range=1)
     {
         std::vector<int_pair> neighbors;
-        int_pair around;
-        if (entities_->exists(p.lock()))
+        if (auto sptr = pl.lock())
         {
-            around = entities_->get_coord(p.lock());
+            auto around = entities_->get_coord(sptr);
             for (int dx = -range; dx <= range; ++dx)
             {
                 for (int dy = -range; dy <= range; ++dy)
@@ -272,40 +286,28 @@ private:
         return neighbors;
     }
 
-    std::vector<int_pair> empty_neighbors(int_pair around, int range=1)
-    {
-        std::vector<int_pair> neighbors;
-        for (int dx = -range; dx <= range; ++dx)
-        {
-            for (int dy = -range; dy <= range; ++dy)
-            {
-                int_pair v = {around.first + dx, around.second + dy};
-                if (!entities_->exists(v) && region_->walkable(v.first, v.second))
-                    neighbors.push_back(v);
-            }
-        }
-        return neighbors;
-    }
-
     template <typename P, typename... Args>
-    void grow_child(int_pair coord, bool growing, Args... args)
+    void grow_something(int_pair coord, Args... args)
     {
         if (entities_->exists(coord))
             entities_->del_coord(coord);
 
         auto np = std::make_shared<P>(args...);
-        if (growing)
-            growing_list_.push_back(np);
         child_list_.push_back(np);
         entities_->add_ptr_later(np, coord);
     }
 
-    void grow_child(plant::type type, int_pair coord, bool growing=true)
+    void hatch_seed(std::shared_ptr<seed> seed)
     {
-        if (type == "pod")
-            grow_child<pod>(coord, growing, region_, rng_, target_, shared_from_this());
-        if (type == "vine")
-            grow_child<vine>(coord, growing, region_, rng_, target_, shared_from_this());
+        auto coord = entities_->get_coord(seed);
+        auto into = seed->grows_into();
+        if (into == "vine")
+            grow_something<vine>(coord, region_, rng_, target_, shared_from_this());
+    }
+
+    void grow_seed(plant::type into, int_pair coord)
+    {
+        grow_something<seed>(coord, region_, rng_, target_, shared_from_this(), into);
     }
 };
 

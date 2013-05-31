@@ -33,6 +33,9 @@ public:
         std::uniform_int_distribution<ssize_t> dis(min, max);
         return dis(gen_);
     }
+
+    template <class I>
+    void shuffle(I first, I last) { std::shuffle(first, last, gen_); }
 private:
     size_t seed_;
     std::random_device rd_;

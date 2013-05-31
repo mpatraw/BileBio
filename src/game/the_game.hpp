@@ -21,7 +21,7 @@ struct level_settings
 };
 
 static constexpr level_settings settings[] = {
-    {5, 0.8, 0.0, 0.1},
+    {1, 0.8, 0.0, 0.1},
 };
 
 static constexpr ssize_t max_levels = 1;

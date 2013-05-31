@@ -20,10 +20,10 @@ public:
         done_ = true;
         time_accumulator_ = 0.0;
     }
-    animation(const animation &but) = default;
-    animation(animation &&but) = default;
-    animation &operator=(const animation &but) = default;
-    animation &operator=(animation &&but) = default;
+    animation(const animation &anim) = default;
+    animation(animation &&anim) = default;
+    animation &operator=(const animation &anim) = default;
+    animation &operator=(animation &&anim) = default;
 
     void set_loops(bool loops=true) { loops_ = loops; }
     void set_duration(double d) { duration_ = d; }
@@ -89,6 +89,10 @@ class state_animator : private boost::noncopyable
 {
 public:
     state_animator() : current_state_("") { }
+    state_animator(const state_animator &sm) = default;
+    state_animator(state_animator &&sm) = default;
+    state_animator &operator=(const state_animator &sm) = default;
+    state_animator &operator=(state_animator &&sm) = default;
 
     void set_state(std::string state)
     {
