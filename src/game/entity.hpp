@@ -25,6 +25,9 @@ public:
     enum did
     {
         did_nothing,
+        did_spawn,
+        did_die,
+
         did_move,
         did_grow,
         did_attack,

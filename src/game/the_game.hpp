@@ -74,6 +74,11 @@ public:
             if (auto cast = std::dynamic_pointer_cast<plant>(p.second))
                 cast->act(on_did_);
         }
+        for (auto &p : *entity_manager_)
+        {
+            if (auto cast = std::dynamic_pointer_cast<plant>(p.second))
+                cast->spawn(on_did_);
+        }
         entity_manager_->add_ptrs();
     }
 

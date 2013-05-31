@@ -50,16 +50,17 @@ public:
 
     void update(double dt)
     {
-        if (!paused_ && (!done_ || loops_))
+        if (!paused_ && !done_)
         {
             time_accumulator_ += dt;
             if (time_accumulator_ >= duration_ / frames_.size() * (current_frame_ + 1))
             {
                 if (current_frame_ + 1 >= (ssize_t)frames_.size())
                 {
-                    done_ = true;
                     if (loops_)
                         current_frame_ = 0;
+                    else
+                        done_ = true;
                     time_accumulator_ -= duration_;
                 }
                 else
@@ -85,7 +86,7 @@ private:
     double time_accumulator_;
 };
 
-class state_animator : private boost::noncopyable
+class state_animator
 {
 public:
     state_animator() : current_state_("") { }
@@ -97,16 +98,47 @@ public:
     void set_state(std::string state)
     {
         current_state_ = state;
-        animations_[current_state_].stop();
+        animations_[current_state_].start();
     }
     const std::string &get_state() const { return current_state_; }
-    const animation &get_animation() const { return animations_.at(current_state_); }
-    animation &get_animation() { return animations_[current_state_]; }
+    void set_transition(std::string from, std::string to)
+    {
+        transitions_[from] = to;
+    }
 
+    const std::string &get_texture() const { return animations_.at(current_state_).get_texture(); }
+    const animation &get_animation() const { return animations_.at(current_state_); }
+    animation &get_animation() { return animations_.at(current_state_); }
+
+    void update(double dt)
+    {
+        animations_.at(current_state_).update(dt);
+        if (animations_.at(current_state_).is_done() &&
+            transitions_.find(current_state_) != transitions_.end())
+        {
+            current_state_ = transitions_[current_state_];
+            animations_.at(current_state_).start();
+        }
+    }
 
 private:
     std::unordered_map<std::string, animation> animations_;
+    std::unordered_map<std::string, std::string> transitions_;
     std::string current_state_;
+};
+
+class animation_manager : private boost::noncopyable
+{
+public:
+    animation_manager() { }
+
+    void add_animation(const animation &anim)
+    {
+        alive_.push_back(anim);
+    }
+
+private:
+    std::vector<animation> alive_;
 };
 
 #endif

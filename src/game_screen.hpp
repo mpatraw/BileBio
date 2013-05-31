@@ -31,7 +31,7 @@ public:
     {
         player_anim_.set_state("walking_s");
         player_anim_.get_animation().set_duration(turn_length_s);
-        player_anim_.get_animation().set_loops(true);
+        player_anim_.get_animation().set_loops(false);
         player_anim_.get_animation().add_frame("player_sw1");
         player_anim_.get_animation().add_frame("player_sw2");
         player_anim_.set_state("attacking_s");
@@ -43,7 +43,8 @@ public:
         player_anim_.get_animation().set_duration(turn_length_s);
         player_anim_.get_animation().set_loops(true);
         player_anim_.get_animation().add_frame("player");
-        player_anim_.get_animation().start();
+        player_anim_.set_transition("attacking_s", "standing");
+        player_anim_.set_transition("walking_s", "standing");
         auto loc = the_game_->player_coord();
         player_coord_ = {loc.first * tile_size, loc.second * tile_size};
         player_destination_ = {loc.first * tile_size, loc.second * tile_size};
@@ -60,8 +61,6 @@ public:
         // Player turn over. Take events.
         if (!player_moving_)
         {
-            player_anim_.set_state("standing");
-            player_anim_.get_animation().start();
             ssize_t dx = 0, dy = 0;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
             {
@@ -111,7 +110,7 @@ public:
             }
         }
 
-        player_anim_.get_animation().update(dt);
+        player_anim_.update(dt);
     }
 
     virtual void player_did(entity::did did, weak_ptr targ)
@@ -125,7 +124,6 @@ public:
             player_timer_ = 0.0;
 
             player_anim_.set_state("walking_s");
-            player_anim_.get_animation().start();
         }
         else if (did == entity::did_attack || did == entity::did_miss)
         {
@@ -138,7 +136,6 @@ public:
             player_moving_ = true;
             player_timer_ = 0.0;
             player_anim_.set_state("attacking_s");
-            player_anim_.get_animation().start();
         }
     }
 
@@ -223,7 +220,7 @@ public:
         sf::Transform t;
         t.translate(controller_->get_coord());
         t.combine(trans);
-        win->draw(sprite_manager_->acquire<sf::RectangleShape>(controller_->get_animator().get_animation().get_texture()), t);
+        win->draw(sprite_manager_->acquire<sf::RectangleShape>(controller_->get_animator().get_texture()), t);
     }
 protected:
     const resource_manager *sprite_manager_;
@@ -264,6 +261,24 @@ public:
 
         manage_sprite(sprite_manager_, *resource_manager_, "floor", tile_size, tile_size);
         manage_sprite(sprite_manager_, *resource_manager_, "rocks", tile_size, tile_size);
+
+        state_animator animator;
+        animator.set_state("walking_s");
+        animator.get_animation().set_duration(turn_length_s);
+        animator.get_animation().set_loops(true);
+        animator.get_animation().add_frame("player_sw1");
+        animator.get_animation().add_frame("player_sw2");
+        animator.set_state("attacking_s");
+        animator.get_animation().set_duration(turn_length_s);
+        animator.get_animation().set_loops(false);
+        animator.get_animation().add_frame("player_sa");
+        animator.get_animation().add_frame("player");
+        animator.set_state("standing");
+        animator.get_animation().set_duration(turn_length_s);
+        animator.get_animation().set_loops(true);
+        animator.get_animation().add_frame("player");
+        animator.get_animation().start();
+        animator_manager_.manage<state_animator>("player", animator);
 
         using std::placeholders::_1;
         using std::placeholders::_2;
@@ -348,6 +363,7 @@ protected:
     sf::View hud_view_;
     screen_manager *screen_manager_;
     resource_manager sprite_manager_;
+    resource_manager animator_manager_;
     const resource_manager *resource_manager_;
 
     std::unique_ptr<the_game> the_game_;

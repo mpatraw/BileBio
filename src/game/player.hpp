@@ -78,9 +78,6 @@ public:
                         sptr->take_damage(vitals_.damage);
                         if (on_did != nullptr)
                             on_did(entities_->get_this_ptr(this), entity::did_attack, pl);
-                        // Remove plant.
-                        if (sptr->is_dead())
-                            entities_->del_ptr(sptr);
                     }
                     else
                     {
