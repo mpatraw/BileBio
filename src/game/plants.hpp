@@ -2,6 +2,8 @@
 #ifndef PLANTS_HPP
 #define PLANTS_HPP
 
+#include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <functional>
 #include <map>
 #include <memory>
@@ -69,7 +71,9 @@ protected:
     // Can't be shared. Would impose a circular reference.
     std::weak_ptr<plant> parent_;
 
-    std::vector<int_pair> empty_neighbors(std::weak_ptr<entity> pl, int range=1)
+    // Helper functions.
+
+    std::vector<int_pair> empty_neighbors(weak_ptr pl, int range=1)
     {
         std::vector<int_pair> neighbors;
         if (auto sptr = pl.lock())
@@ -97,46 +101,26 @@ protected:
         auto np = std::make_shared<P>(region_, rng_, entities_, target_, args...);
         entities_->add_ptr_later(np, coord);
     }
-};
 
-class vine : public plant, private boost::noncopyable
-{
-private:
-    using weak_ptr = std::weak_ptr<entity>;
-    using shared_ptr = std::shared_ptr<entity>;
-    using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
-public:
+    boost::optional<double> distance_between(weak_ptr a, weak_ptr b)
+    {
+        auto asptr = a.lock();
+        auto bsptr = b.lock();
 
-    vine(region *reg, rng *r, sparse_2d_map<entity> *pm, weak_ptr target, std::weak_ptr<plant> parent) :
-        plant(reg, r, "vine", pm, target, parent)
-    {
-        vitals_ = {3, 3, 0, 0.0};
-            vitals_ = {1, 1, 0, 0.0}; // Seed
-            vitals_ = {3, 3, 0, 0.0}; // Flower
-            vitals_ = {1, 1, 0, 0.0}; // Fruit
-    }
-    virtual ~vine()
-    {
-    }
-
-    virtual void act(on_did_func on_did)
-    {
-        if (is_dead())
+        if (asptr && bsptr && entities_->exists(asptr) && entities_->exists(bsptr))
         {
-            on_did(shared_from_this(), entity::did_die, weak_ptr());
-            entities_->del_ptr(shared_from_this());
-            return;
+            auto acoord = entities_->get_coord(asptr);
+            auto bcoord = entities_->get_coord(bsptr);
+            auto dx = (acoord.first - bcoord.first);
+            auto dy = (acoord.second - bcoord.second);
+            return boost::optional<double>(std::sqrt(dx * dx + dy * dy));
         }
-    }
 
-    virtual void spawn(on_did_func on_did)
-    {
-        (void)on_did;
+        return boost::optional<double>();
     }
-
-protected:
 };
 
+class vine;
 class seed : public plant, private boost::noncopyable
 {
 private:
@@ -175,55 +159,70 @@ public:
     {
         // Seeds don't spawn
         (void)on_did;
+    }
+
+protected:
+    plant::type into_;
+    int timer_;
+};
+
+class vine : public plant, private boost::noncopyable
+{
+private:
+    using weak_ptr = std::weak_ptr<entity>;
+    using shared_ptr = std::shared_ptr<entity>;
+    using on_did_func = std::function<void(weak_ptr src, entity::did did, weak_ptr targ)>;
+public:
+
+    vine(region *reg, rng *r, sparse_2d_map<entity> *pm, weak_ptr target, std::weak_ptr<plant> parent) :
+        plant(reg, r, "vine", pm, target, parent)
+    {
+        vitals_ = {3, 3, 0, 0.0};
+            vitals_ = {1, 1, 0, 0.0}; // Seed
+            vitals_ = {3, 3, 0, 0.0}; // Flower
+            vitals_ = {1, 1, 0, 0.0}; // Fruit
+    }
+    virtual ~vine()
+    {
+    }
+
+    virtual void act(on_did_func on_did)
+    {
+        if (is_dead())
+        {
+            on_did(shared_from_this(), entity::did_die, weak_ptr());
+            entities_->del_ptr(shared_from_this());
+            return;
+        }
+    }
+
+    virtual void spawn(on_did_func on_did)
+    {
+        (void)on_did;
 
         if (auto parentsptr = parent_.lock())
         {
             if (!parentsptr->can_spawn_more())
                 return;
 
-            if (auto targ_sptr = target_.lock())
+            auto targ_sptr = target_.lock();
+            auto distance = distance_between(shared_from_this(), targ_sptr);
+            weak_ptr final_target = shared_from_this();
+            if (targ_sptr && distance && *distance < 6.0)
+                final_target = targ_sptr;
+
+            auto empty = empty_neighbors(final_target);
+            if (empty.size() > 0)
             {
-                auto t = entities_->get_coord(shared_from_this());
-                auto c = entities_->get_coord(targ_sptr);
-                auto a = (c.first - t.first);
-                auto b = (c.second - t.second);
-                if (std::sqrt(a * a + b * b) < 6)
-                {
-                    auto empty = empty_neighbors(targ_sptr);
-                    if (empty.size() > 0)
-                    {
-                        auto r = rng_->get_range(0, empty.size() - 1);
-                        grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
-                        parentsptr->spawned_something();
-                    }
-                }
-                else
-                {
-                    auto empty = empty_neighbors(shared_from_this());
-                    if (empty.size() > 0)
-                    {
-                        auto r = rng_->get_range(0, empty.size() - 1);
-                        grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
-                        parentsptr->spawned_something();
-                    }
-                }
-            }
-            else
-            {
-                auto empty = empty_neighbors(shared_from_this());
-                if (empty.size() > 0)
-                {
-                    auto r = rng_->get_range(0, empty.size() - 1);
-                    grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
-                    parentsptr->spawned_something();
-                }
+                std::printf("vine spawning\n");
+                auto r = rng_->get_range(0, empty.size() - 1);
+                grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
+                parentsptr->spawned_something();
             }
         }
     }
 
 protected:
-    plant::type into_;
-    int timer_;
 };
 
 /*
@@ -285,42 +284,19 @@ public:
         if (!can_spawn_more())
             return;
 
-        if (auto targ_sptr = target_.lock())
+        auto targ_sptr = target_.lock();
+        auto distance = distance_between(shared_from_this(), targ_sptr);
+        weak_ptr final_target = shared_from_this();
+        if (targ_sptr && distance && *distance < 6.0)
+            final_target = targ_sptr;
+
+        auto empty = empty_neighbors(final_target);
+        if (empty.size() > 0)
         {
-            auto t = entities_->get_coord(shared_from_this());
-            auto c = entities_->get_coord(targ_sptr);
-            auto a = (c.first - t.first);
-            auto b = (c.second - t.second);
-            if (std::sqrt(a * a + b * b) < 6)
-            {
-                auto empty = empty_neighbors(targ_sptr);
-                if (empty.size() > 0)
-                {
-                    auto r = rng_->get_range(0, empty.size() - 1);
-                    grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
-                    spawned_something();
-                }
-            }
-            else
-            {
-                auto empty = empty_neighbors(shared_from_this());
-                if (empty.size() > 0)
-                {
-                    auto r = rng_->get_range(0, empty.size() - 1);
-                    grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
-                    spawned_something();
-                }
-            }
-        }
-        else
-        {
-            auto empty = empty_neighbors(shared_from_this());
-            if (empty.size() > 0)
-            {
-                auto r = rng_->get_range(0, empty.size() - 1);
-                grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
-                spawned_something();
-            }
+            std::printf("root spawning\n");
+            auto r = rng_->get_range(0, empty.size() - 1);
+            grow_something<seed>(int_pair(empty[r].first, empty[r].second), shared_from_this(), "vine");
+            spawned_something();
         }
     }
 
