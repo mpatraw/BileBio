@@ -113,19 +113,29 @@ public:
 
     void add_ptr_later(shared_ptr ptr, int_pair coord)
     {
-        later_.push_back({ptr, coord});
+        add_later_.push_back({ptr, coord});
     }
     void add_ptrs()
     {
-        for (auto &el : later_)
+        for (auto &el : add_later_)
             add_ptr(el.ptr, el.coord);
-        later_.clear();
+        add_later_.clear();
     }
 
     void del_ptr(shared_const_ptr ptr)
     {
         coord_map_.erase(get_coord(ptr));
         ptr_map_.erase(ptr);
+    }
+    void del_ptr_later(shared_ptr ptr)
+    {
+        del_later_.push_back(ptr);
+    }
+    void del_ptrs()
+    {
+        for (auto &p : del_later_)
+            del_ptr(p);
+        del_later_.clear();
     }
     void del_coord(int_pair coord)
     {
@@ -149,7 +159,7 @@ public:
     {
         coord_map_.clear();
         ptr_map_.clear();
-        later_.clear();
+        add_later_.clear();
     }
 
     typename std::map<int_pair, shared_ptr>::iterator begin()
@@ -178,7 +188,8 @@ private:
         int_pair coord;
     };
 
-    std::vector<later> later_;
+    std::vector<later> add_later_;
+    std::vector<shared_ptr> del_later_;
     std::map<int_pair, shared_ptr> coord_map_;
     std::map<shared_const_ptr, int_pair> ptr_map_;
 };

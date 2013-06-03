@@ -57,7 +57,7 @@ public:
         if (is_dead())
         {
             on_did(shared_from_this(), entity::did_die, weak_ptr());
-            entities_->del_ptr(shared_from_this());
+            entities_->del_ptr_later(shared_from_this());
             return;
         }
     }
@@ -120,7 +120,9 @@ protected:
     }
 };
 
+class seed;
 class vine;
+
 class seed : public plant, private boost::noncopyable
 {
 private:
@@ -144,7 +146,7 @@ public:
         if (is_dead())
         {
             on_did(shared_from_this(), entity::did_die, weak_ptr());
-            entities_->del_ptr(shared_from_this());
+            entities_->del_ptr_later(shared_from_this());
             return;
         }
 
@@ -191,7 +193,7 @@ public:
         if (is_dead())
         {
             on_did(shared_from_this(), entity::did_die, weak_ptr());
-            entities_->del_ptr(shared_from_this());
+            entities_->del_ptr_later(shared_from_this());
             return;
         }
     }
@@ -270,7 +272,7 @@ public:
         if (is_dead())
         {
             on_did(shared_from_this(), entity::did_die, weak_ptr());
-            entities_->del_ptr(shared_from_this());
+            entities_->del_ptr_later(shared_from_this());
             return;
         }
 

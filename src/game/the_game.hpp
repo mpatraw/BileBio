@@ -74,6 +74,7 @@ public:
             if (auto cast = std::dynamic_pointer_cast<plant>(p.second))
                 cast->act(on_did_);
         }
+        entity_manager_->del_ptrs();
         for (auto &p : *entity_manager_)
         {
             if (auto cast = std::dynamic_pointer_cast<plant>(p.second))
