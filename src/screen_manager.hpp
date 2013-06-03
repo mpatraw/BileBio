@@ -35,12 +35,21 @@ public:
     {
         screen_stack_.push_back(scr);
         scr->on_enter();
+        if (screen_stack_.size() >= 2)
+            screen_stack_[screen_stack_.size() - 2]->on_enter();
     }
     void pop_screen()
     {
         auto scr = std::move(screen_stack_.back());
         screen_stack_.pop_back();
         scr->on_exit();
+        if (screen_stack_.size())
+            screen_stack_.back()->on_enter();
+    }
+    void replace_screen(std::shared_ptr<screen> scr)
+    {
+        pop_screen();
+        push_screen(scr);
     }
 
     void on_event(const sf::Event &event)

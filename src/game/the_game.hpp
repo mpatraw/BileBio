@@ -74,6 +74,7 @@ public:
             if (auto cast = std::dynamic_pointer_cast<plant>(p.second))
                 cast->act(on_did_);
         }
+        entity_manager_->add_ptrs();
         entity_manager_->del_ptrs();
         for (auto &p : *entity_manager_)
         {
@@ -81,6 +82,7 @@ public:
                 cast->spawn(on_did_);
         }
         entity_manager_->add_ptrs();
+        entity_manager_->del_ptrs();
     }
 
     std::pair<int, int> player_coord()

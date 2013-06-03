@@ -68,6 +68,7 @@ int main()
     load_resource<sf::Font>(rm, "Pokemon GB", "resources/Pokemon GB.ttf");
     load_resource<sf::Texture>(rm, "title", "resources/title.png");
     load_resource<sf::Texture>(rm, "frame", "resources/frame.png");
+    load_resource<sf::Texture>(rm, "death_screen", "resources/death_screen.png");
 
     load_resource<sf::Texture>(rm, "heart", "resources/heart.png");
     load_resource<sf::Texture>(rm, "energy", "resources/energy.png");

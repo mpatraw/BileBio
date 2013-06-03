@@ -96,10 +96,27 @@ protected:
     void grow_something(int_pair coord, Args... args)
     {
         if (entities_->exists(coord))
-            entities_->del_coord(coord);
+            entities_->del_coord_later(coord);
 
         auto np = std::make_shared<P>(region_, rng_, entities_, target_, args...);
         entities_->add_ptr_later(np, coord);
+    }
+
+    boost::optional<int> manhattan_distance_between(weak_ptr a, weak_ptr b)
+    {
+        auto asptr = a.lock();
+        auto bsptr = b.lock();
+
+        if (asptr && bsptr && entities_->exists(asptr) && entities_->exists(bsptr))
+        {
+            auto acoord = entities_->get_coord(asptr);
+            auto bcoord = entities_->get_coord(bsptr);
+            auto dx = std::abs(acoord.first - bcoord.first);
+            auto dy = std::abs(acoord.second - bcoord.second);
+            return boost::optional<int>(dx + dy);
+        }
+
+        return boost::optional<int>();
     }
 
     boost::optional<double> distance_between(weak_ptr a, weak_ptr b)
@@ -111,8 +128,8 @@ protected:
         {
             auto acoord = entities_->get_coord(asptr);
             auto bcoord = entities_->get_coord(bsptr);
-            auto dx = (acoord.first - bcoord.first);
-            auto dy = (acoord.second - bcoord.second);
+            auto dx = acoord.first - bcoord.first;
+            auto dy = acoord.second - bcoord.second;
             return boost::optional<double>(std::sqrt(dx * dx + dy * dy));
         }
 
@@ -179,10 +196,10 @@ public:
     vine(region *reg, rng *r, sparse_2d_map<entity> *pm, weak_ptr target, std::weak_ptr<plant> parent) :
         plant(reg, r, "vine", pm, target, parent)
     {
-        vitals_ = {3, 3, 0, 0.0};
-            vitals_ = {1, 1, 0, 0.0}; // Seed
-            vitals_ = {3, 3, 0, 0.0}; // Flower
-            vitals_ = {1, 1, 0, 0.0}; // Fruit
+        vitals_ = {3, 3, 1, 0.5};
+        // vitals_ = {1, 1, 0, 0.0}; // Seed
+        // vitals_ = {3, 3, 0, 0.0}; // Flower
+        // vitals_ = {1, 1, 0, 0.0}; // Fruit
     }
     virtual ~vine()
     {
@@ -195,6 +212,27 @@ public:
             on_did(shared_from_this(), entity::did_die, weak_ptr());
             entities_->del_ptr_later(shared_from_this());
             return;
+        }
+
+        auto targ_sptr = target_.lock();
+        if (targ_sptr && entities_->exists(targ_sptr))
+        {
+            auto distance = distance_between(shared_from_this(), targ_sptr);
+            if (distance && *distance <= 1.0)
+            {
+                if (rng_->get_uniform() < vitals_.to_hit)
+                {
+                    std::printf("Attacked player!\n");
+                    targ_sptr->take_damage(vitals_.damage);
+                    if (on_did != nullptr)
+                        on_did(shared_from_this(), entity::did_attack, targ_sptr);
+                }
+                else
+                {
+                    if (on_did != nullptr)
+                        on_did(shared_from_this(), entity::did_miss, targ_sptr);
+                }
+            }
         }
     }
 

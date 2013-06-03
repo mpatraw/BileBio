@@ -8,6 +8,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include <death_screen.hpp>
 #include <screen_manager.hpp>
 #include <game/the_game.hpp>
 #include <utils/animation_manager.hpp>
@@ -318,6 +319,12 @@ public:
             controller_->get_coord().x + tile_size / 2,
             controller_->get_coord().y + tile_size / 2);
         the_game_renderer_->update(dt);
+
+        if (the_game_->get_player().is_dead())
+        {
+            auto screen = std::make_shared<death_screen>(win_, screen_manager_, resource_manager_);
+            screen_manager_->replace_screen(screen);
+        }
     }
 
     virtual void on_render()
@@ -331,7 +338,7 @@ public:
         {
             sf::Transform trans;
             trans.translate(0.1 * i, 0);
-            if (i > vitals.max_hearts - vitals.hearts)
+            if (i >= vitals.hearts)
                 win_->draw(sprite_manager_.acquire<sf::RectangleShape>("noheart"), trans);
             else
                 win_->draw(sprite_manager_.acquire<sf::RectangleShape>("heart"), trans);
@@ -341,7 +348,7 @@ public:
         {
             sf::Transform trans;
             trans.translate(0.1 * i, 0.1);
-            if (i > atts.max_energy - atts.energy)
+            if (i >= atts.energy)
                 win_->draw(sprite_manager_.acquire<sf::RectangleShape>("noenergy"), trans);
             else
                 win_->draw(sprite_manager_.acquire<sf::RectangleShape>("energy"), trans);

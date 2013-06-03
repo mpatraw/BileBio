@@ -124,7 +124,9 @@ public:
 
     void del_ptr(shared_const_ptr ptr)
     {
-        coord_map_.erase(get_coord(ptr));
+        auto c = get_coord(ptr);
+        if (coord_map_[c] == ptr)
+            coord_map_.erase(c);
         ptr_map_.erase(ptr);
     }
     void del_ptr_later(shared_ptr ptr)
@@ -137,10 +139,9 @@ public:
             del_ptr(p);
         del_later_.clear();
     }
-    void del_coord(int_pair coord)
+    void del_coord_later(int_pair coord)
     {
-        ptr_map_.erase(get_ptr(coord).lock());
-        coord_map_.erase(coord);
+        del_ptr_later(get_ptr(coord).lock());
     }
 
     void move_ptr_by(shared_ptr ptr, int_pair delta)
